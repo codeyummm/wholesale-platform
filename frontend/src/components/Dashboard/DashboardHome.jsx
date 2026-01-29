@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Package, TrendingUp, Users, LogOut } from 'lucide-react';
 
 export default function DashboardHome() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
@@ -27,18 +29,23 @@ export default function DashboardHome() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           {[
-            { title: 'Total Inventory', value: '1,247', icon: Package, color: '#3b82f6' },
-            { title: 'Total Sales', value: '$125,340', icon: TrendingUp, color: '#10b981' },
-            { title: 'Active Suppliers', value: '23', icon: Users, color: '#8b5cf6' }
-          ].map((stat, i) => (
-            <div key={i} style={{ background: 'white', borderRadius: '0.5rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            { title: 'Manage Inventory', icon: Package, color: '#3b82f6', onClick: () => navigate('/inventory') },
+            { title: 'View Sales', icon: TrendingUp, color: '#10b981', onClick: () => alert('Coming soon!') },
+            { title: 'Suppliers', icon: Users, color: '#8b5cf6', onClick: () => alert('Coming soon!') }
+          ].map((item, i) => (
+            <div 
+              key={i} 
+              onClick={item.onClick}
+              style={{ background: 'white', borderRadius: '0.5rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', cursor: 'pointer', transition: 'transform 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ padding: '0.75rem', background: `${stat.color}15`, borderRadius: '0.5rem' }}>
-                  <stat.icon size={24} color={stat.color} />
+                <div style={{ padding: '0.75rem', background: `${item.color}15`, borderRadius: '0.5rem' }}>
+                  <item.icon size={24} color={item.color} />
                 </div>
               </div>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>{stat.title}</p>
-              <p style={{ fontSize: '1.875rem', fontWeight: 'bold' }}>{stat.value}</p>
+              <p style={{ fontSize: '1.125rem', fontWeight: '600' }}>{item.title}</p>
             </div>
           ))}
         </div>
@@ -46,13 +53,13 @@ export default function DashboardHome() {
         <div style={{ background: 'white', borderRadius: '0.5rem', padding: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>🎉 System is Live!</h3>
           <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-            Your wholesale platform is successfully deployed and running. All features are active!
+            Your wholesale platform is successfully deployed. Start managing your inventory!
           </p>
           <ul style={{ listStyle: 'none', padding: 0 }}>
             <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Authentication System</li>
-            <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ MongoDB Database Connected</li>
-            <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Backend API Deployed</li>
-            <li style={{ padding: '0.5rem 0' }}>✅ Frontend Application Live</li>
+            <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Inventory Management</li>
+            <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Database Connected</li>
+            <li style={{ padding: '0.5rem 0' }}>✅ Frontend & Backend Live</li>
           </ul>
         </div>
       </main>

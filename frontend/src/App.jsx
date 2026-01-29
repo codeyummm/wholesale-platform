@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import DashboardHome from './components/Dashboard/DashboardHome';
+import InventoryList from './components/Inventory/InventoryList';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -21,6 +22,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><DashboardHome /></PrivateRoute>} />
+          <Route path="/inventory" element={<PrivateRoute><InventoryList /></PrivateRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
