@@ -29,6 +29,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/inventory', require('./routes/inventory'));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
