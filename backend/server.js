@@ -30,9 +30,9 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/inventory', require('./routes/inventory'));
+app.use('/api/upload', require('./routes/upload'));
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
+app.use((err, req, res, next) => console.error(err.stack);
   res.status(500).json({ success: false, message: err.message || 'Server Error' });
 });
 
