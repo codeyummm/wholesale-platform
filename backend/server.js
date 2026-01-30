@@ -14,10 +14,17 @@ mongoose.connect(process.env.MONGODB_URI)
 
 app.use(express.json());
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL || '*', 
+  credentials: true 
+}));
 
 app.get('/', (req, res) => {
-  res.json({ success: true, message: 'Wholesale Platform API', version: '1.0.0' });
+  res.json({ 
+    success: true, 
+    message: 'Wholesale Platform API', 
+    version: '1.0.0' 
+  });
 });
 
 app.get('/api/health', (req, res) => {
@@ -30,10 +37,13 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/inventory', require('./routes/inventory'));
-app.use('/api/upload', require('./routes/upload'));
 
-app.use((err, req, res, next) => console.error(err.stack);
-  res.status(500).json({ success: false, message: err.message || 'Server Error' });
+app.use((err, req, res, ne=> {
+  console.error(err.stack);
+  res.status(500).json({ 
+    success: false, 
+    message: err.message || 'Server Error' 
+  });
 });
 
 const PORT = process.env.PORT || 5000;
