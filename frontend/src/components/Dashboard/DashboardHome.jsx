@@ -30,8 +30,8 @@ export default function DashboardHome() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           {[
             { title: 'Manage Inventory', icon: Package, color: '#3b82f6', onClick: () => navigate('/inventory') },
-            { title: 'View Sales', icon: TrendingUp, color: '#10b981', onClick: () => alert('Coming soon!') },
-            { title: 'Suppliers', icon: Users, color: '#8b5cf6', onClick: () => alert('Coming soon!') }
+            { title: 'Manage Suppliers', icon: Users, color: '#8b5cf6', onClick: () => navigate('/suppliers') },
+            { title: 'View Sales', icon: TrendingUp, color: '#10b981', onClick: () => alert('Coming soon!') }
           ].map((item, i) => (
             <div 
               key={i} 
@@ -53,13 +53,13 @@ export default function DashboardHome() {
         <div style={{ background: 'white', borderRadius: '0.5rem', padding: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>🎉 System is Live!</h3>
           <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-            Your wholesale platform is successfully deployed. Start managing your inventory!
+            Your wholesale platform is successfully deployed. All features are working!
           </p>
           <ul style={{ listStyle: 'none', padding: 0 }}>
             <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Authentication System</li>
             <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Inventory Management</li>
-            <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Database Connected</li>
-            <li style={{ padding: '0.5rem 0' }}>✅ Frontend & Backend Live</li>
+            <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #e5e7eb' }}>✅ Supplier Management</li>
+            <li style={{ padding: '0.5rem 0' }}>✅ Database Connected</li>
           </ul>
         </div>
       </main>

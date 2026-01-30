@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import DashboardHome from './components/Dashboard/DashboardHome';
 import InventoryList from './components/Inventory/InventoryList';
+import SupplierList from './components/Suppliers/SupplierList';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -23,6 +24,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><DashboardHome /></PrivateRoute>} />
           <Route path="/inventory" element={<PrivateRoute><InventoryList /></PrivateRoute>} />
+          <Route path="/suppliers" element={<PrivateRoute><SupplierList /></PrivateRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
