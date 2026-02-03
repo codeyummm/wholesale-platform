@@ -214,3 +214,4 @@ exports.deleteInvoice = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to delete invoice', error: error.message });
   }
 };
+// updated
