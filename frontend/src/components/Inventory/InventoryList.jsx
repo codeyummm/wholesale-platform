@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Plus, Search, Trash2, Edit, Camera, Upload } from 'lucide-react';
+import InvoiceScanner from '../InvoiceScanner';
 
 export default function InventoryList() {
   const [inventory, setInventory] = useState([]);
@@ -60,6 +61,12 @@ export default function InventoryList() {
       price: { cost: 0, retail: 0 },
       specifications: { storage: '', color: '', ram: '' }
     });
+  };
+
+  const handleScanComplete = (invoice) => {
+    setShowScanModal(false);
+    fetchInventory();
+    alert('Invoice scanned and saved successfully!');
   };
 
   return (
@@ -286,18 +293,17 @@ export default function InventoryList() {
           </div>
         )}
 
-        {/* Scan Invoice Modal - Coming in next step */}
+        {/* Scan Invoice Modal */}
         {showScanModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-            <div style={{ background: 'white', borderRadius: '0.5rem', padding: '2rem', maxWidth: '500px', width: '100%', margin: '1rem' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>📸 Invoice Scanner</h2>
-              <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>AI-powered OCR coming next! This will automatically extract product dails from invoice photos.</p>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem', overflow: 'auto' }}>
+            <div style={{ background: 'white', borderRadius: '0.5rem', maxWidth: '1000px', width: '100%', maxHeight: '95vh', overflow: 'auto', position: 'relative' }}>
               <button
                 onClick={() => setShowScanModal(false)}
-                style={{ width: '100%', padding: '0.75rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '2rem', height: '2rem', cursor: 'pointer', fontSize: '1.25rem', zIndex: 10 }}
               >
-                Close
+                ×
               </button>
+              <InvoiceScanner onScanComplete={handleScanComplete} />
             </div>
           </div>
         )}
