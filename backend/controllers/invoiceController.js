@@ -45,6 +45,12 @@ const extractInvoiceData = (text) => {
   };
 };
 
+const parsePDF = async (buffer) => {
+  const pdfParse = require('pdf-parse');
+  const data = await pdfParse(buffer);
+  return data.text;
+};
+
 exports.scanInvoice = async (req, res) => {
   try {
     if (!req.file) {
@@ -58,9 +64,7 @@ exports.scanInvoice = async (req, res) => {
     // Handle PDF files
     if (req.file.mimetype === 'application/pdf') {
       console.log('Processing PDF...');
-      const pdf = require('pdf-parse');
-      const pdfData = await pdf(req.file.buffer);
-      text = pdfData.text;
+      text = await parsePDF(req.file.buffer);
       console.log('PDF text extracted, length:', text.length);
     } 
     // Handle image files (JPEG, PNG, WebP)
