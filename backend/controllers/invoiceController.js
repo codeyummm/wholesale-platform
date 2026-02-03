@@ -30,7 +30,7 @@ const extractInvoiceData = (text) => {
 
   const detectCurrency = (text) => {
     if (text.includes('€') || /EUR/i.test(text)) return 'EUR';
-    if (text.includes('£') || /GB.test(text)) return 'GBP';
+    if (text.includes('£') || /GBP/.test(text)) return 'GBP';
     if (/CAD/i.test(text)) return 'CAD';
     if (/INR|₹/i.test(text)) return 'INR';
     return 'USD';
