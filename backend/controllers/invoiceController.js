@@ -21,26 +21,24 @@ const extractInvoiceData = (text) => {
     return 'USD';
   };
 
-  // Extract supplier (first line usually)
   const extractSupplier = (text) => {
     const lines = text.split('\n').filter(l => l.trim().length > 2);
     for (const line of lines.slice(0, 5)) {
       const cleaned = line.trim();
-      if (cleaned.length > 3 && 
-          /LLC|Inc|Corp|Ltd|Company/i.test(cleaned)) {
+      if (/LLC|Inc|Corp|Ltd|Company/i.test(cleaned)) {
         return cleaned;
       }
     }
     return lines[0]?.trim() || 'Unknown Supplier';
   };
 
-  // Extract order/invoice number
+  // Extract invoice number
   let invoiceNumber = null;
   const invMatch = text.match(/Invoice\s*#[:\s]*(\d+)/i);
   const orderMatch = text.match(/Order\s*#[:\s]*(\d+)/i);
   invoiceNumber = invMatch ? invMatch[1] : (orderMatch ? orderMatch[1] : null);
 
-  // Extract date - format: "Aug 22 2025" or similar
+  // Extract date
   let invoiceDate = null;
   const dateMatch = text.match(/([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/);
   if (dateMatch) {
@@ -57,94 +55,55 @@ const extractInvoiceData = (text) => {
   let tax = taxMatch ? parseNumber(taxMatch[1]) : null;
   let totalAmount = totalMatch ? parseNumber(totalMatch[1]) : null;
 
-  // Extract products from the invoice
+  // Extract products
   const products = [];
+  const lines = text.split('\n');
   
-  // Pattern for Mannapov-style invoices:
-  // Item Number | Description (with /) | Qty | Price | Ext Price
-  // Example: M35-3133 .1 Apple / iPhone 14 / A2649 / Blue / Unlocked / Unlocked / 128GB / Grade 5 10 $226.00 $2,260.00
+  // Pattern for price line: "10$226.00$2,260.00" (qty followed by prices with no spaces)
+  const priceLinePattern = /^(\d+)\$([\d,]+\.?\d{2})\$([\d,]+\.?\d{2})$/;
   
-  // First, try to find lines that contain iPhone/Samsung etc with prices
-  const productPattern = /([A-Z0-9\-\.]+\s*\.?\d*)\s+(Apple|Samsung|Google|Motorola|LG)?\s*\/?\s*(iPhone|Galaxy|Pixel)?[^$]*?(\d+)\s+\$?([\d,]+\.?\d{2})\s+\$?([\d,]+\.?\d{2})/gi;
-  
-  let match;
-  while ((match = productPattern.exec(text)) !== null) {
-    const fullMatch = match[0];
-    const itemCode = match[1]?.trim();
-    const qty = parseInt(match[4]) || 1;
-    const price = parseNumber(match[5]) || 0;
-    const extPrice = parseNumber(match[6]) || 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
     
-    // Extract description between item code and qty
-    const descMatch = fullMatch.match(/(?:Apple|Samsung|Google)?\s*\/?\s*(?:iPhone|Galaxy|Pixel)[^$]+/i);
-    let description = descMatch ? descMatch[0].trim() : fullMatch;
-    
-    // Clean up description
-    description = description.replace(/\d+\s+\$[\d,]+\.?\d*\s+\$[\d,]+\.?\d*$/, '').trim();
-    
-    if (price > 0) {
-      products.push({
-        name: description || `Item ${itemCode}`,
-        quantity: qty,
-        unitPrice: price,
-        lineTotal: extPrice || (qty * price)
-      });
-    }
-  }
-
-  // If no products found with first pattern, try alternative
-  if (products.length === 0) {
-    const lines = text.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    // Check if this line matches the price pattern
+    const priceMatch = line.match(priceLinePattern);
+    if (priceMatch) {
+      const qty = parseInt(priceMatch[1]) || 1;
+      const price = parseNumber(priceMatch[2]) || 0;
+      const extPrice = parseNumber(priceMatch[3]) || 0;
       
-      // Look for lines with dollar amounts
-      const priceMatch = line.match(/(\d+)\s+\$?([\d,]+\.?\d{2})\s+\$?([\d,]+\.?\d{2})/);
-      if (priceMatch) {
-        const qty = parseInt(priceMatch[1]) || 1;
-        const price = parseNumber(priceMatch[2]) || 0;
-        const extPrice = parseNumber(priceMatch[3]) || 0;
+      // Look backwards to find the description
+      let description = '';
+      let itemCode = '';
+      
+      for (let j = i - 1; j >= Math.max(0, i - 5); j--) {
+        const prevLine = lines[j].trim();
         
-        // Get description from before the numbers
-        let desc = line.substring(0, line.indexOf(priceMatch[0])).trim();
+        // Skip empty lines
+        if (!prevLine) continue;
         
-        // Skip if it's a header or total line
-        if (/subtotal|total|tax|freight|fees|ship qty|price|ext price/i.test(desc)) continue;
-        
-        // Check previous line for more description
-        if (i > 0 && desc.length < 20) {
-          const prevLine = lines[i-1].trim();
-          if (prevLine && !/item number|description|qty|price/i.test(prevLine)) {
-            desc = prevLine + ' ' + desc;
-          }
+        // Check if it's an item code line (like M35-3133 .2)
+        if (/^[A-Z]\d+[\-\d\.]+\s*\.?\d*$/i.test(prevLine)) {
+          itemCode = prevLine;
+          break;
         }
         
-        if (desc.length > 3 && price > 0) {
-          products.push({
-            name: desc,
-            quantity: qty,
-            unitPrice: price,
-            lineTotal: extPrice
-          });
+        // Check if it's a description line (contains / or brand names)
+        if (prevLine.includes('/') || /Apple|iPhone|Samsung|Galaxy|Google|Pixel|Grade/i.test(prevLine)) {
+          description = prevLine + ' ' + description;
+        }
+        
+        // Stop if we hit another price line or header
+        if (priceLinePattern.test(prevLine) || /^(Item|Description|Ship Qty|Price)/i.test(prevLine)) {
+          break;
         }
       }
-    }
-  }
-
-  // Alternative: Look for iPhone/Apple product lines specifically
-  if (products.length === 0) {
-    const iphonePattern = /Apple\s*\/\s*iPhone\s*\d+[^$]*?(\d+)\s+\$?([\d,]+\.?\d{2})\s+\$?([\d,]+\.?\d{2})/gi;
-    while ((match = iphonePattern.exec(text)) !== null) {
-      const fullLine = match[0];
-      const qty = parseInt(match[1]) || 1;
-      const price = parseNumber(match[2]) || 0;
-      const extPrice = parseNumber(match[3]) || 0;
       
-      let desc = fullLine.replace(/(\d+)\s+\$[\d,]+\.?\d{2}\s+\$[\d,]+\.?\d{2}$/, '').trim();
+      description = description.trim();
       
-      if (price > 0) {
+      if (description && price > 0) {
         products.push({
-          name: desc,
+          name: description,
           quantity: qty,
           unitPrice: price,
           lineTotal: extPrice
@@ -186,8 +145,6 @@ exports.scanInvoice = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    
-    console.log('File received:', req.file.mimetype, req.file.size, 'bytes');
     
     let text = '';
     
