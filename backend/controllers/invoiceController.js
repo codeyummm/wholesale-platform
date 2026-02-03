@@ -13,9 +13,9 @@ const extractInvoiceData = (text) => {
   };
 
   const detectCurrency = (text) => {
-    if (text.includes('€') || /EUR/i.test(text)) return 'EUR';
-    if (text.includes('£') || /GBP/i.test(text)) return 'GBP';
-    if (text.includes('₹') || /INR/i.test(text)) return 'INR';
+    if (text.includes('EUR')) return 'EUR';
+    if (text.includes('GBP')) return 'GBP';
+    if (text.includes('INR')) return 'INR';
     return 'USD';
   };
 
@@ -23,148 +23,60 @@ const extractInvoiceData = (text) => {
     const lines = text.split('\n').filter(l => l.trim().length > 2);
     for (const line of lines.slice(0, 8)) {
       const cleaned = line.trim();
-      if (cleaned.length > 3 && 
-          !/^(invoice|date|bill|ship|order|to:|from:|phone|fax|email|www\.|http)/i.test(cleaned) &&
-          !/^\d+$/.cleaned) &&
-          !/^[\d\-\(\)\s]+$/.test(cleaned)) {
+      const isHeader = /^(invoice|date|bill|ship|order|to:|from:|phone|fax|email|www\.|http)/i.test(cleaned);
+      const isNumber = /^\d+$/.test(cleaned);
+      const isPhone = /^[\d\-\(\)\s]+$/.test(cleaned);
+      if (cleaned.length > 3 && !isHeader && !isNumber && !isPhone) {
         return cleaned;
       }
     }
     return 'Unknown Supplier';
   };
 
-  // Extract invoice number - multiple patterns
-  const invoicePatterns = [
-    /Invoice\s*#[:\s]*(\d+)/i,
-    /Invoice\s*Number[:\s]*([A-Z0-9\-]+)/i,
-    /Invoice[:\s]*#?\s*([A-Z0-9\-]+)/i,
-    /Inv\s*#[:\s]*([A-Z0-9\-]+)/i,
-    /Order\s*#[:\s]*(\d+)/i,
-    /Reference[:\s]*([A-Z0-9\-]+)/i,
-  ];
-  
   let invoiceNumber = null;
-  for (const pattern of invoicePatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      invoiceNumber = match[1];
-      break;
-    }
-  }
+  const invMatch = text.match(/Invoice\s*#[:\s]*(\d+)/i) || 
+                   text.match(/Invoice\s*Number[:\s]*([A-Z0-9\-]+)/i) ||
+                   text.match(/Order\s*#[:\s]*(\d+)/i);
+  if (invMatch) invoiceNumber = invMatch[1];
 
-  // Extract date - multiple formats
-  const datePatterns = [
-    /Invoice\s*Date[:\s]*([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i,
-    /Date[:\s]*([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i,
-    /Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
-    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/,
-    /([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/,
-  ];
-  
   let invoiceDate = null;
-  for (const pattern of datePatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const parsed = new Date(match[1]);
-      if (!isNaN(parsed)) {
-        invoiceDate = parsed;
-        break;
-      }
-    }
+  const dateMatch = text.match(/([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/) ||
+                    text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+  if (dateMatch) {
+    const parsed = new Date(dateMatch[1]);
+    if (!isNaN(parsed)) invoiceDate = parsed;
   }
 
-  // Extract totals
-  const totalPatterns = [
-    /(?:Grand\s*)?Total[:\s]*\$?\s*([\d,]+\.?\d*)/i,
-    /Amount\s*Due[:\s]*\$?\s*([\d,]+\.?\d*)/i,
-    /Balance\s*Due[:\s]*\$?\s*([\d,]+\.?\d*)/i,
-    /Total\s*Amount[:\s]*\$?\s*([\d,]+\.?\d*)/i,
-  ];
-  
   let totalAmount = null;
-  for (const pattern of totalPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      totalAmount = parseNumber(match[1]);
-      if (totalAmount) break;
-    }
-  }
+  const totalMatch = text.match(/(?:Grand\s*)?Total[:\s]*\$?\s*([\d,]+\.?\d*)/i) ||
+                     text.match(/Amount\s*Due[:\s]*\$?\s*([\d,]+\.?\d*)/i);
+  if (totalMatch) totalAmount = parseNumber(totalMatch[1]);
 
   const subtotalMatch = text.match(/Sub\s*total[:\s]*\$?\s*([\d,]+\.?\d*)/i);
   const taxMatch = text.match(/(?:Tax|VAT|GST)[:\s]*\$?\s*([\d,]+\.?\d*)/i);
 
-  // Extract products/line items
   const products = [];
   const lines = text.split('\n');
   
-  // Pattern for line items: Item/Description followed by quantity, price, total
-  const itemPatterns = [
-    // Pattern: Description ... Qty ... Price ... Total
-    /^(.+?)\s+(\d+)\s+\$?([\d,]+\.?\d{2})\s+\$?([\d,]+\.?\d{2})$/,
-    // Pattern: Item Number Description Qty Price Total  
-    /^([A-Z0-9\-]+)\s+(.+?)\s+(\d+)\s+\$?([\d,]+\.?\d{2})\s+\$?([\d,]+\.?\d{2})$/,
-    // Pattern: Qty x Price format
-    /^(.+?)\s+(\d+)\s*[xX]\s*\$?([\d,]+\.?\d{2})\s+\$?([\d,]+\.?\d{2})$/,
-  ];
-
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.length < 5) continue;
-    
-    // Skip header/footer lines
     if (/^(item|description|qty|quantity|price|total|subtotal|tax|ship|bill|invoice|date|order)/i.test(trimmed)) continue;
     
-    for (const pattern of itemPatterns) {
-      const match = trimmed.match(pattern);
-      if (match) {
-        let name, qty, price, total;
-        
-        if (match.length === 5) {
-          // First pattern or third pattern
-          name = match[1].trim();
-          qty = parseInt(match[2]);
-          price = parseNumber(match[3]);
-          total = parseNumber(match[4]);
-        } else if (match.length === 6) {
-          // Second pattern with item number
-          name = match[2].trim();
-          qty = parseInt(match[3]);
-          price = parseNumber(match[4]);
-          total = parseNumber(match[5]);
-        }
-        
-        if (name && qty && price && name.length > 2) {
-          products.push({
-            name: name,
-            quantity: qty,
-            unitPrice: price,
-            lineTotal: total || (qty * price)
-          });
-        }
-        break;
-      }
-    }
-  }
-
-  // Try alternative extraction if no products found
-  if (products.length === 0) {
-    // Look for price patterns in text
-    const priceLines = text.match(/^.+\$[\d,]+\.?\d{2}.*$/gm);
-    if (priceLines) {
-      for (const line of priceLines.slice(0, 10)) {
-        const priceMatch = line.match(/(.+?)\s+\$?([\d,]+\.?\d{2})\s*$/);
-        if (priceMatch) {
-          const name = priceMatch[1].trim();
-          const price = parseNumber(priceMatch[2]);
-          if (name.length > 3 && price && !/total|subtotal|tax|shipping/i.test(name)) {
-            products.push({
-              name: name,
-              quantity: 1,
-              unitPrice: price,
-              lineTotal: price
-            });
-          }
-        }
+    const match = trimmed.match(/^(.+?)\s+(\d+)\s+\$?([\d,]+\.?\d{2})\s+\$?([\d,]+\.?\d{2})$/);
+    if (match) {
+      const name = match[1].trim();
+      const qty = parseInt(match[2]);
+      const price = parseNumber(match[3]);
+      const total = parseNumber(match[4]);
+      
+      if (name && qty && price && name.length > 2) {
+        products.push({
+          name: name,
+          quantity: qty,
+          unitPrice: price,
+          lineTotal: total || (qty * price)
+        });
       }
     }
   }
@@ -207,9 +119,7 @@ exports.scanInvoice = async (req, res) => {
     } 
     else if (req.file.mimetype.startsWith('image/')) {
       console.log('Processing image with OCR...');
-      const result = await Tesseract.recognize(req.file.buffer, 'eng', {
-        logger: m => console.log('OCR:', m.status, Math.round(m.progress * 100) + '%')
-      });
+      const result = await Tesseract.recognize(req.file.buffer, 'eng');
       text = result.data.text;
       console.log('OCR completed, text length:', text.length);
     } 
