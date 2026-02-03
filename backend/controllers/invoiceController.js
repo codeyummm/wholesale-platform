@@ -2,6 +2,63 @@ const Tesseract = require('tesseract.js');
 const Invoice = require('../models/Invoice');
 const Supplier = require('../models/Supplier');
 
+const parseProductDescription = (description) => {
+  // Parse: "Apple / iPhone 14 / A2649 / Blue / Unlocked / Unlocked / 128GB / Grade 5"
+  const parts = description.split('/').map(p => p.trim()).filter(p => p);
+  
+  let brand = '';
+  let model = '';
+  let modelNumber = '';
+  let color = '';
+  let lockStatus = '';
+  let storage = '';
+  let grade = '';
+  
+  for (const part of parts) {
+    const lower = part.toLowerCase();
+    
+    // Brand
+    if (/^(apple|samsung|google|motorola|lg|oneplus|xiaomi|huawei|sony|nokia)$/i.test(part)) {
+      brand = part;
+    }
+    // Model (iPhone, Galaxy, Pixel, etc.)
+    else if (/iphone|galaxy|pixel|moto|redmi/i.test(part)) {
+      model = part;
+    }
+    // Model number (A2649, SM-G998U, etc.)
+    else if (/^[A-Z]{1,3}\d{3,4}[A-Z]?$/i.test(part) || /^SM-/i.test(part) || /^GG/i.test(part)) {
+      modelNumber = part;
+    }
+    // Storage
+    else if (/^\d+\s*(GB|TB)$/i.test(part)) {
+      storage = part;
+    }
+    // Grade
+    else if (/grade\s*\d/i.test(part)) {
+      grade = part;
+    }
+    // Lock status
+    else if (/unlocked|locked|verizon|at&t|t-mobile|sprint/i.test(lower)) {
+      if (!lockStatus) lockStatus = part;
+    }
+    // Color (common colors)
+    else if (/^(black|white|blue|red|green|purple|pink|gold|silver|gray|grey|midnight|starlight|graphite|sierra|alpine|pacific|coral|yellow|orange|cream|lavender|mint|porcelain)$/i.test(part)) {
+      color = part;
+    }
+  }
+  
+  return {
+    brand: brand || 'Unknown',
+    model: model || '',
+    modelNumber: modelNumber || '',
+    color: color || '',
+    lockStatus: lockStatus || '',
+    storage: storage || '',
+    grade: grade || '',
+    fullDescription: description
+  };
+};
+
 const extractInvoiceData = (text) => {
   console.log('=== RAW TEXT ===');
   console.log(text);
@@ -59,13 +116,12 @@ const extractInvoiceData = (text) => {
   const products = [];
   const lines = text.split('\n');
   
-  // Pattern for price line: "10$226.00$2,260.00" (qty followed by prices with no spaces)
+  // Pattern for price line: "10$226.00$2,260.00"
   const priceLinePattern = /^(\d+)\$([\d,]+\.?\d{2})\$([\d,]+\.?\d{2})$/;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     
-    // Check if this line matches the price pattern
     const priceMatch = line.match(priceLinePattern);
     if (priceMatch) {
       const qty = parseInt(priceMatch[1]) || 1;
@@ -79,21 +135,17 @@ const extractInvoiceData = (text) => {
       for (let j = i - 1; j >= Math.max(0, i - 5); j--) {
         const prevLine = lines[j].trim();
         
-        // Skip empty lines
         if (!prevLine) continue;
         
-        // Check if it's an item code line (like M35-3133 .2)
         if (/^[A-Z]\d+[\-\d\.]+\s*\.?\d*$/i.test(prevLine)) {
           itemCode = prevLine;
           break;
         }
         
-        // Check if it's a description line (contains / or brand names)
         if (prevLine.includes('/') || /Apple|iPhone|Samsung|Galaxy|Google|Pixel|Grade/i.test(prevLine)) {
           description = prevLine + ' ' + description;
         }
         
-        // Stop if we hit another price line or header
         if (priceLinePattern.test(prevLine) || /^(Item|Description|Ship Qty|Price)/i.test(prevLine)) {
           break;
         }
@@ -102,8 +154,18 @@ const extractInvoiceData = (text) => {
       description = description.trim();
       
       if (description && price > 0) {
+        const parsed = parseProductDescription(description);
         products.push({
-          name: description,
+          itemCode: itemCode,
+          name: `${parsed.brand} ${parsed.model} ${parsed.storage} ${parsed.color}`.trim(),
+          brand: parsed.brand,
+          model: parsed.model,
+          modelNumber: parsed.modelNumber,
+          color: parsed.color,
+          lockStatus: parsed.lockStatus,
+          storage: parsed.storage,
+          grade: parsed.grade,
+          fullDescription: description,
           quantity: qty,
           unitPrice: price,
           lineTotal: extPrice
@@ -118,7 +180,7 @@ const extractInvoiceData = (text) => {
     totalAmount, 
     subtotal,
     productsCount: products.length,
-    products: products.map(p => ({ name: p.name.substring(0, 50), qty: p.quantity, price: p.unitPrice }))
+    products: products.map(p => ({ brand: p.brand, model: p.model, qty: p.quantity, price: p.unitPrice }))
   });
 
   return {
@@ -196,14 +258,14 @@ exports.saveInvoice = async (req, res) => {
     
     const invoice = await Invoice.create({
       invoiceNumber,
-      invoiceDate,
+      invoiceDate: invoiceDate || new Date(),
       supplier: supplier ? supplier._id : null,
       supplierName: supplier ? supplier.name : supplierName,
       products,
-      subtotal,
-      tax,
-      totalAmount,
-      currency,
+      subtotal: subtotal || 0,
+      tax: tax || 0,
+      totalAmount: totalAmount || 0,
+      currency: currency || 'USD',
       createdBy: req.user._id,
       status: 'processed'
     });
