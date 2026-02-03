@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 const { scanInvoice, saveInvoice, getInvoices, getInvoice, deleteInvoice } = require('../controllers/invoiceController');
 
 const upload = multer({
@@ -10,14 +10,14 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (allowedTypes.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and PDF are allowed.'));
+    else cb(new Error('Invalid file type.'));
   },
 });
 
-router.post('/scan', auth, upload.single('invoice'), scanInvoice);
-router.post('/save', auth, saveInvoice);
-router.get('/', auth, getInvoices);
-router.get('/:id', auth, getInvoice);
-router.delete('/:id', auth, deleteInvoice);
+router.post('/scan', protect, upload.single('invoice'), scanInvoice);
+router.post('/save', protect, saveInvoice);
+router.get('/', protect, getInvoices);
+router.get('/:id', protect, getInvoice);
+router.delete('/:id', protect, deleteInvoice);
 
 module.exports = router;
