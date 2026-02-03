@@ -1,4 +1,5 @@
 const Tesseract = require('tesseract.js');
+const pdfParse = require('pdf-parse');
 const Invoice = require('../models/Invoice');
 const Supplier = require('../models/Supplier');
 
@@ -53,15 +54,34 @@ exports.scanInvoice = async (req, res) => {
     
     console.log('File received:', req.file.mimetype, req.file.size, 'bytes');
     
-    const result = await Tesseract.recognize(req.file.buffer, 'eng', {
-      logger: m => console.log('OCR:', m.status, Math.round(m.progress * 100) + '%')
-    });
+    let text = '';
     
-    const text = result.data.text;
-    console.log('OCR completed, text length:', text.length);
+    // Handle PDF files
+    if (req.file.mimetype === 'application/pdf') {
+      console.log('Processing PDF...');
+      const pdfData = await pdfParse(req.file.buffer);
+      text = pdfData.text;
+      console.log('PDF text extracted, length:', text.length);
+    } 
+    // Handle image files (JPEG, PNG, WebP)
+    else if (req.file.mimetype.startsWith('image/')) {
+      console.log('Processing image with OCR...');
+      const result = await Tesseract.recognize(req.file.buffer, 'eng', {
+        logger: m => console.log('OCR:', m.status, Math.round(m.progress * 100) + '%')
+      });
+      text = result.data.text;
+      console.log('OCR completed, text length:', text.length);
+    } 
+    else {
+      return res.status(400).json({ success: false, message: 'Unsupported file format. Use PDF, JPEG, or PNG.' });
+    }
+    
+    if (!text || text.trim().length < 10) {
+      return res.status(400).json({ success: false, message: 'Could not extract text from file. Try a clearer image or PDF.' });
+    }
     
     const extractedData = extractInvoiceData(text);
-    const confidence = text.length > 100 ? 'high' : text.length > 50 ? 'medium' : 'low';
+    const confidence = text.length > 500 ? 'high' : text.length > 100 ? 'medium' : 'low';
     
     res.json({
       success: true,
