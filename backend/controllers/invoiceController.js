@@ -1,5 +1,4 @@
 const Tesseract = require('tesseract.js');
-const pdfParse = require('pdf-parse');
 const Invoice = require('../models/Invoice');
 const Supplier = require('../models/Supplier');
 
@@ -59,7 +58,8 @@ exports.scanInvoice = async (req, res) => {
     // Handle PDF files
     if (req.file.mimetype === 'application/pdf') {
       console.log('Processing PDF...');
-      const pdfData = await pdfParse(req.file.buffer);
+      const pdf = require('pdf-parse');
+      const pdfData = await pdf(req.file.buffer);
       text = pdfData.text;
       console.log('PDF text extracted, length:', text.length);
     } 
