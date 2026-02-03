@@ -3,7 +3,6 @@ const Invoice = require('../models/Invoice');
 const Supplier = require('../models/Supplier');
 
 const parseProductDescription = (description) => {
-  // Parse: "Apple / iPhone 14 / A2649 / Blue / Unlocked / Unlocked / 128GB / Grade 5"
   const parts = description.split('/').map(p => p.trim()).filter(p => p);
   
   let brand = '';
@@ -17,31 +16,24 @@ const parseProductDescription = (description) => {
   for (const part of parts) {
     const lower = part.toLowerCase();
     
-    // Brand
     if (/^(apple|samsung|google|motorola|lg|oneplus|xiaomi|huawei|sony|nokia)$/i.test(part)) {
       brand = part;
     }
-    // Model (iPhone, Galaxy, Pixel, etc.)
     else if (/iphone|galaxy|pixel|moto|redmi/i.test(part)) {
       model = part;
     }
-    // Model number (A2649, SM-G998U, etc.)
     else if (/^[A-Z]{1,3}\d{3,4}[A-Z]?$/i.test(part) || /^SM-/i.test(part) || /^GG/i.test(part)) {
       modelNumber = part;
     }
-    // Storage
     else if (/^\d+\s*(GB|TB)$/i.test(part)) {
       storage = part;
     }
-    // Grade
     else if (/grade\s*\d/i.test(part)) {
       grade = part;
     }
-    // Lock status
     else if (/unlocked|locked|verizon|at&t|t-mobile|sprint/i.test(lower)) {
       if (!lockStatus) lockStatus = part;
     }
-    // Color (common colors)
     else if (/^(black|white|blue|red|green|purple|pink|gold|silver|gray|grey|midnight|starlight|graphite|sierra|alpine|pacific|coral|yellow|orange|cream|lavender|mint|porcelain)$/i.test(part)) {
       color = part;
     }
@@ -89,13 +81,11 @@ const extractInvoiceData = (text) => {
     return lines[0]?.trim() || 'Unknown Supplier';
   };
 
-  // Extract invoice number
   let invoiceNumber = null;
   const invMatch = text.match(/Invoice\s*#[:\s]*(\d+)/i);
   const orderMatch = text.match(/Order\s*#[:\s]*(\d+)/i);
   invoiceNumber = invMatch ? invMatch[1] : (orderMatch ? orderMatch[1] : null);
 
-  // Extract date
   let invoiceDate = null;
   const dateMatch = text.match(/([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/);
   if (dateMatch) {
@@ -103,7 +93,6 @@ const extractInvoiceData = (text) => {
     if (!isNaN(parsed)) invoiceDate = parsed;
   }
 
-  // Extract totals
   const subtotalMatch = text.match(/Subtotal[:\s]*\$?([\d,]+\.?\d*)/i);
   const taxMatch = text.match(/Tax[:\s]*\$?([\d,]+\.?\d*)/i);
   const totalMatch = text.match(/Total[:\s]*\$?([\d,]+\.?\d*)/i);
@@ -112,11 +101,8 @@ const extractInvoiceData = (text) => {
   let tax = taxMatch ? parseNumber(taxMatch[1]) : null;
   let totalAmount = totalMatch ? parseNumber(totalMatch[1]) : null;
 
-  // Extract products
   const products = [];
   const lines = text.split('\n');
-  
-  // Pattern for price line: "10$226.00$2,260.00"
   const priceLinePattern = /^(\d+)\$([\d,]+\.?\d{2})\$([\d,]+\.?\d{2})$/;
   
   for (let i = 0; i < lines.length; i++) {
@@ -128,7 +114,6 @@ const extractInvoiceData = (text) => {
       const price = parseNumber(priceMatch[2]) || 0;
       const extPrice = parseNumber(priceMatch[3]) || 0;
       
-      // Look backwards to find the description
       let description = '';
       let itemCode = '';
       
@@ -239,7 +224,8 @@ exports.scanInvoice = async (req, res) => {
 
 exports.saveInvoice = async (req, res) => {
   try {
-    const { invoiceNumber, invoiceDate, supplierName, supplierId, products, subtotal, tax, totalAmount, currency } = req.body;
+    console.log('=== SAVE INVOICE ===');
+    const { invoiceNumber, invoiceDate, supplierName, supplierId, products, subtotal, tax, totalAmount, currency, addToInventory } = req.body;
     
     let supplier = null;
     if (supplierId) {
@@ -269,6 +255,54 @@ exports.saveInvoice = async (req, res) => {
       createdBy: req.user._id,
       status: 'processed'
     });
+    console.log('Invoice saved:', invoice._id);
+    
+    if (addToInventory && products && products.length > 0) {
+      console.log('Adding', products.length, 'products to inventory...');
+      const Inventory = require('../models/Inventory');
+      
+      for (const product of products) {
+        try {
+          const modelName = `${product.brand || ''} ${product.model || ''}`.trim() || product.name || 'Unknown';
+          const brandName = product.brand || 'Unknown';
+          const storage = product.storage || '';
+          const color = product.color || '';
+          
+          const existingItem = await Inventory.findOne({
+            model: modelName,
+            brand: brandName,
+            'specifications.storage': storage,
+            'specifications.color': color
+          });
+          
+          if (existingItem) {
+            existingItem.quantity += product.quantity || 1;
+            await existingItem.save();
+            console.log('Updated inventory:', existingItem._id, 'qty:', existingItem.quantity);
+          } else {
+            const costPrice = product.unitPrice || 0;
+            const retailPrice = Math.round(costPrice * 1.2);
+            
+            const newItem = await Inventory.create({
+              model: modelName,
+              brand: brandName,
+              quantity: product.quantity || 1,
+              price: {
+                cost: costPrice,
+                retail: retailPrice
+              },
+              specifications: {
+                storage: storage,
+                color: color
+              }
+            });
+            console.log('Created inventory:', newItem._id, newItem.model);
+          }
+        } catch (invError) {
+          console.error('Inventory error:', invError.message);
+        }
+      }
+    }
     
     res.status(201).json({ success: true, message: 'Invoice saved successfully', data: invoice });
   } catch (error) {
