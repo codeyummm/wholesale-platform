@@ -1,11 +1,6 @@
 const Tesseract = require('tesseract.js');
-const sharp = require('sharp');
 const Invoice = require('../models/Invoice');
 const Supplier = require('../models/Supplier');
-
-const preprocessImage = async (buffer) => {
-  return await sharp(buffer).grayscale().normalize().sharpen().toBuffer();
-};
 
 const extractInvoiceData = (text) => {
   const parseNumber = (str) => {
@@ -31,10 +26,10 @@ const extractInvoiceData = (text) => {
     return 'Unknown Supplier';
   };
 
-  const totalMatch = text.match(/(?:Total|Amount Due)[:\s]*[\$]?\s*([\d,]+\.?\d*)/i);
-  const subtotalMatch = text.match(/(?:Subtotal)[:\s]*[\$]?\s*([\d,]+\.?\d*)/i);
-  const taxMatch = text.match(/(?:Tax|VAT)[:\s]*[\$]?\s*([\d,]+\.?\d*)/i);
-  const invoiceMatch = text.match(/(?:Invoice|Inv)[\s#:]*([A-Z0-9\-]+)/i);
+  const totalMatch = text.match(/(?:Total|Amount Due|Grand Total)[:\s]*[\$]?\s*([\d,]+\.?\d*)/i);
+  const subtotalMatch = text.match(/(?:Subtotal|Sub Total)[:\s]*[\$]?\s*([\d,]+\.?\d*)/i);
+  const taxMatch = text.match(/(?:Tax|VAT|GST)[:\s]*[\$]?\s*([\d,]+\.?\d*)/i);
+  const invoiceMatch = text.match(/(?:Invoice|Inv|Order)[\s#:]*([A-Z0-9\-]+)/i);
   const dateMatch = text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
 
   return {
@@ -55,11 +50,19 @@ exports.scanInvoice = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    const processedBuffer = await preprocessImage(req.file.buffer);
-    const result = await Tesseract.recognize(processedBuffer, 'eng');
+    
+    console.log('File received:', req.file.mimetype, req.file.size, 'bytes');
+    
+    const result = await Tesseract.recognize(req.file.buffer, 'eng', {
+      logger: m => console.log('OCR:', m.status, Math.round(m.progress * 100) + '%')
+    });
+    
     const text = result.data.text;
+    console.log('OCR completed, text length:', text.length);
+    
     const extractedData = extractInvoiceData(text);
     const confidence = text.length > 100 ? 'high' : text.length > 50 ? 'medium' : 'low';
+    
     res.json({
       success: true,
       message: 'Invoice scanned successfully',
