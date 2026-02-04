@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Upload, FileText, Camera, Loader2, Check, Save, Plus, Trash2, AlertCircle, X, Calendar, Hash, Building, Smartphone, Palette, HardDrive, Shield, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, FileText, Camera, Loader2, Check, Save, Plus, Trash2, AlertCircle, X, Calendar, Hash, Building, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../utils/api';
 
 const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
@@ -82,7 +82,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
       newProducts[index] = { ...newProducts[index], [field]: value };
       if (field === 'quantity' || field === 'unitPrice') {
         newProducts[index].lineTotal = (newProducts[index].quantity || 0) * (newProducts[index].unitPrice || 0);
-        // Update IMEIs array when quantity changes
         if (field === 'quantity') {
           const newQty = parseInt(value) || 1;
           const currentImeis = newProducts[index].imeis || [];
@@ -149,7 +148,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
     <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '16px', padding: '2px' }}>
       <div style={{ background: '#ffffff', borderRadius: '14px', padding: '24px', maxHeight: '85vh', overflowY: 'auto' }}>
         
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
           <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '10px', borderRadius: '10px' }}>
             <FileText size={22} color="white" />
@@ -160,7 +158,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
           </div>
         </div>
 
-        {/* Error */}
         {error && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', marginBottom: '16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px' }}>
             <AlertCircle size={18} color="#dc2626" />
@@ -171,7 +168,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: extractedData ? '280px 1fr' : '1fr', gap: '20px' }}>
           
-          {/* Upload */}
           <div>
             <div onDrop={handleDrop} onDragOver={handleDragOver}
               style={{ border: `2px dashed ${file ? '#22c55e' : '#d1d5db'}`, borderRadius: '10px', padding: '24px 16px', textAlign: 'center', background: file ? '#f0fdf4' : '#fafafa', cursor: 'pointer' }}
@@ -198,22 +194,19 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
               {scanning ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Scanning...</> : <><Camera size={16} /> Scan Invoice</>}
             </button>
 
-            {/* New Supplier Badge */}
             {extractedData?.isNewSupplier && (
               <div style={{ marginTop: '12px', padding: '10px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#92400e', fontWeight: '500' }}>⚠️ New Supplier</p>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#92400e', fontWeight: '500' }}>New Supplier</p>
                 <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#a16207' }}>"{extractedData.supplierName}" will be created</p>
               </div>
             )}
           </div>
 
-          {/* Results */}
           {extractedData && (
             <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '16px' }}>
               
-              {/* Header Info */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '500', background: getCdenceColor(extractedData.confidence).bg, color: getConfidenceColor(extractedData.confidence).text }}>
+                <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '500', background: getConfidenceColor(extractedData.confidence).bg, color: getConfidenceColor(extractedData.confidence).text }}>
                   {extractedData.confidence === 'high' && <Check size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}{extractedData.confidence}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'white', padding: '4px 10px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
@@ -230,7 +223,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
                 </div>
               </div>
 
-              {/* Products */}
               <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                   <span style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem' }}>Products ({extractedData.products?.length || 0})</span>
@@ -240,7 +232,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
                 <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
                   {extractedData.products?.map((product, index) => (
                     <div key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      {/* Product Header */}
                       <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: index % 2 === 0 ? 'white' : '#fafafa' }} onClick={() => toggleProductExpand(index)}>
                         {expandedProducts[index] ? <ChevronUp size={16} color="#6b7280" /> : <ChevronDown size={16} color="#6b7280" />}
                         <span style={{ flex: 1, fontWeight: '500', fontSize: '0.85rem', color: '#1f2937' }}>{product.brand} {product.model} {product.storage} {product.color}</span>
@@ -249,7 +240,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
                         <button onClick={(e) => { e.stopPropagation(); removeProduct(index); }} style={{ background: '#fee2e2', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer' }}><Trash2 size={14} color="#dc2626" /></button>
                       </div>
                       
-                      {/* Expanded Details */}
                       {expandedProducts[index] && (
                         <div style={{ padding: '12px', background: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' }}>
@@ -289,15 +279,14 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
                             </div>
                           </div>
                           
-                          {/* IMEI Section */}
                           <div style={{ background: 'white', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
                             <label style={{ fontSize: '0.7rem', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '8px' }}>
-                              📱 IMEIs ({product.quantity} devices)
+                              IMEIs ({product.quantity} devices)
                             </label>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
                               {(product.imeis || []).map((imei, imeiIdx) => (
                                 <div key={imeiIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <spantyle={{ fontSize: '0.7rem', color: '#6b7280', minWidth: '20px' }}>{imeiIdx + 1}.</span>
+                                  <span style={{ fontSize: '0.7rem', color: '#6b7280', minWidth: '20px' }}>{imeiIdx + 1}.</span>
                                   <input
                                     type="text"
                                     value={imei}
@@ -316,7 +305,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
                 </div>
               </div>
 
-              {/* Totals */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
                 <div style={{ background: 'white', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
                   <label style={{ fontSize: '0.65rem', color: '#6b7280', display: 'block', marginBottom: '2px' }}>Subtotal</label>
@@ -332,7 +320,6 @@ const InvoiceScanner = ({ onScanComplete, supplierId = null }) => {
                 </div>
               </div>
 
-              {/* Actions */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={addToInventory} onChange={(e) => setAddToInventory(e.target.checked)} style={{ width: '14px', height: '14px', accentColor: '#6366f1' }} />
