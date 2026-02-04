@@ -3,13 +3,23 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
-
 dotenv.config();
-
 const app = express();
 
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
+  .then(async () => {
+    console.log('✅ MongoDB Connected');
+    
+    // Drop the problematic IMEI unique index if it exists
+    try {
+      const db = mongoose.connection.db;
+      const collection = db.collection('inventories');
+      await collection.dropIndex('devices.imei_1');
+      console.log('✅ Dropped devices.imei_1 index');
+    } catch (e) {
+      console.log('Index check:', e.message);
+    }
+  })
   .catch(err => console.error('❌ MongoDB Error:', err));
 
 app.use(express.json({ limit: '10mb' }));
@@ -20,7 +30,7 @@ app.get('/', (req, res) => {
   res.json({ success: true, message: 'Wholesale Platform API', version: '1.0.0' });
 });
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req, res
   res.json({ 
     success: true, 
     status: 'healthy',
@@ -39,7 +49,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log('🚀 Server running on port ' + PORT);
 });
