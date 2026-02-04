@@ -1,6 +1,7 @@
 const Tesseract = require('tesseract.js');
 const Invoice = require('../models/Invoice');
 const Supplier = require('../models/Supplier');
+const Inventory = require('../models/Inventory');
 
 const parseProductDescription = (description) => {
   const parts = description.split('/').map(p => p.trim()).filter(p => p);
@@ -79,6 +80,11 @@ const extractInvoiceData = (text) => {
       }
     }
     return lines[0]?.trim() || 'Unknown Supplier';
+  };
+
+  const extractPhone = (text) => {
+    const phoneMatch = text.match(/Phone\s*#?\s*:?\s*([\d\-\(\)\s]+)/i);
+    return phoneMatch ? phoneMatch[1].trim() : '';
   };
 
   let invoiceNumber = null;
@@ -172,6 +178,7 @@ const extractInvoiceData = (text) => {
     invoiceNumber,
     invoiceDate,
     supplierName: extractSupplier(text),
+    supplierPhone: extractPhone(text),
     subtotal,
     tax,
     totalAmount: totalAmount || 0,
@@ -211,10 +218,23 @@ exports.scanInvoice = async (req, res) => {
     const extractedData = extractInvoiceData(text);
     const confidence = text.length > 500 ? 'high' : text.length > 100 ? 'medium' : 'low';
     
+    // Check if supplier exists
+    const existingSupplier = await Supplier.findOne({ 
+      name: new RegExp(extractedData.supplierName, 'i') 
+    });
+    
     res.json({
       success: true,
       message: 'Invoice scanned successfully',
-      data: { ...extractedData, confidence }
+      data: { 
+        ...extractedData, 
+        confidence,
+        existingSupplier: existingSupplier ? {
+          _id: existingSupplier._id,
+          name: existingSupplier.name
+        } : null,
+        isNewSupplier: !existingSupplier
+      }
     });
   } catch (error) {
     console.error('Invoice scan error:', error);
@@ -225,29 +245,54 @@ exports.scanInvoice = async (req, res) => {
 exports.saveInvoice = async (req, res) => {
   try {
     console.log('=== SAVE INVOICE ===');
-    const { invoiceNumber, invoiceDate, supplierName, supplierId, products, subtotal, tax, totalAmount, currency, addToInventory } = req.body;
+    const { 
+      invoiceNumber, 
+      invoiceDate, 
+      supplierName, 
+      supplierId, 
+      supplierPhone,
+      products, 
+      subtotal, 
+      tax, 
+      totalAmount, 
+      currency, 
+      addToInventory
+    } = req.body;
+    
+    console.log('Save request:', { invoiceNumber, supplierName, supplierId, productsCount: products?.length, addToInventory });
     
     let supplier = null;
+    
+    // Find existing supplier by ID
     if (supplierId) {
       supplier = await Supplier.findById(supplierId);
+      console.log('Found supplier by ID:', supplier?.name);
     }
+    
+    // Find or create supplier by name
     if (!supplier && supplierName) {
-      supplier = await Supplier.findOne({ name: new RegExp(supplierName, 'i') });
+      supplier = await Supplier.findOne({ name: new RegExp(`^${supplierName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+      console.log('Found supplier by name:', supplier?.name);
+      
       if (!supplier) {
+        console.log('Creating new supplier:', supplierName);
         supplier = await Supplier.create({ 
-          name: supplierName, 
-          createdBy: req.user._id,
-          contact: { phone: '', email: '' }
+          name: supplierName,
+          contact: { 
+            phone: supplierPhone || ''
+          }
         });
+        console.log('New supplier created:', supplier._id);
       }
     }
     
+    // Create invoice record
     const invoice = await Invoice.create({
-      invoiceNumber,
+      invoiceNumber: invoiceNumber || 'N/A',
       invoiceDate: invoiceDate || new Date(),
       supplier: supplier ? supplier._id : null,
       supplierName: supplier ? supplier.name : supplierName,
-      products,
+      products: products || [],
       subtotal: subtotal || 0,
       tax: tax || 0,
       totalAmount: totalAmount || 0,
@@ -255,11 +300,36 @@ exports.saveInvoice = async (req, res) => {
       createdBy: req.user._id,
       status: 'processed'
     });
-    console.log('Invoice saved:', invoice._id);
+    console.log('Invoice created:', invoice._id);
     
+    // Add invoice to supplier's invoices array
+    if (supplier && invoiceNumber) {
+      try {
+        const supplierInvoiceData = {
+          invoiceNumber: invoiceNumber || 'N/A',
+          invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
+          totalAmount: totalAmount || 0,
+          items: (products || []).map(p => ({
+            model: p.model || p.name || 'Unknown',
+            brand: p.brand || 'Unknown',
+            quantity: p.quantity || 1,
+            unitPrice: p.unitPrice || 0
+          })),
+          createdAt: new Date()
+        };
+        
+        await Supplier.findByIdAndUpdate(supplier._id, {
+          $push: { invoices: supplierInvoiceData }
+        });
+        console.log('Invoice added to supplier record');
+      } catch (supplierErr) {
+        console.error('Error adding invoice to supplier:', supplierErr.message);
+      }
+    }
+    
+    // Add products to inventory
     if (addToInventory && products && products.length > 0) {
       console.log('Adding', products.length, 'products to inventory...');
-      const Inventory = require('../models/Inventory');
       
       for (const product of products) {
         try {
@@ -267,7 +337,12 @@ exports.saveInvoice = async (req, res) => {
           const brandName = product.brand || 'Unknown';
           const storage = product.storage || '';
           const color = product.color || '';
+          const costPrice = product.unitPrice || 0;
+          const retailPrice = Math.round(costPrice * 1.2);
           
+          console.log('Processing inventory item:', { modelName, brandName, qty: product.quantity });
+          
+          // Check if product exists in inventory
           const existingItem = await Inventory.findOne({
             model: modelName,
             brand: brandName,
@@ -276,14 +351,15 @@ exports.saveInvoice = async (req, res) => {
           });
           
           if (existingItem) {
+            // Update existing inventory
             existingItem.quantity += product.quantity || 1;
+            existingItem.price.cost = costPrice;
+            existingItem.price.retail = retailPrice;
             await existingItem.save();
-            console.log('Updated inventory:', existingItem._id, 'qty:', existingItem.quantity);
+            console.log('Updated inventory item:', existingItem._id, 'New qty:', existingItem.quantity);
           } else {
-            const costPrice = product.unitPrice || 0;
-            const retailPrice = Math.round(costPrice * 1.2);
-            
-            const newItem = await Inventory.create({
+            // Create new inventory item
+            const newInventoryItem = new Inventory({
               model: modelName,
               brand: brandName,
               quantity: product.quantity || 1,
@@ -296,15 +372,25 @@ exports.saveInvoice = async (req, res) => {
                 color: color
               }
             });
-            console.log('Created inventory:', newItem._id, newItem.model);
+            
+            await newInventoryItem.save();
+            console.log('Created new inventory item:', newInventoryItem._id);
           }
         } catch (invError) {
-          console.error('Inventory error:', invError.message);
+          console.error('Inventory error for product:', product.name, invError.message);
         }
       }
+      console.log('Finished adding products to inventory');
     }
     
-    res.status(201).json({ success: true, message: 'Invoice saved successfully', data: invoice });
+    res.status(201).json({ 
+      success: true, 
+      message: 'Invoice saved successfully', 
+      data: {
+        invoice,
+        supplier: supplier ? { _id: supplier._id, name: supplier.name } : null
+      }
+    });
   } catch (error) {
     console.error('Save invoice error:', error);
     res.status(500).json({ success: false, message: 'Failed to save invoice', error: error.message });
