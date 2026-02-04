@@ -40,6 +40,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/suppliers', require('./routes/supplier'));
 app.use('/api/invoices', require('./routes/invoice'));
+app.use('/api/device-tests', require('./routes/deviceTest'));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
