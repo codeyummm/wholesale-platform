@@ -9,8 +9,6 @@ const app = express();
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('✅ MongoDB Connected');
-    
-    // Drop the problematic IMEI unique index if it exists
     try {
       const db = mongoose.connection.db;
       const collection = db.collection('inventories');
@@ -30,11 +28,11 @@ app.get('/', (req, res) => {
   res.json({ success: true, message: 'Wholesale Platform API', version: '1.0.0' });
 });
 
-app.get('/api/health', (req, res
+app.get('/api/health', (req, res) => {
   res.json({ 
     success: true, 
     status: 'healthy',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+tabase: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
