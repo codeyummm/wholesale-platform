@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { Plus, Search, Trash2, Edit, Camera, ChevronDown, ChevronUp, X, Save, Smartphone } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, Camera, ChevronDown, ChevronUp, X, Save, Smartphone, Printer, QrCode } from 'lucide-react';
+import QRCode from 'qrcode';
+import Barcode from 'react-barcode';
 import InvoiceScanner from '../InvoiceScanner';
 
 export default function InventoryList() {
@@ -10,8 +12,17 @@ export default function InventoryList() {
   const [showModal, setShowModal] = useState(false);
   const [showScanModal, setShowScanModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeviceEditModal, setShowDeviceEditModal] = useState(false);
+  const [showLabelModal, setShowLabelModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [editDevice, setEditDevice] = useState(null);
+  const [editDeviceIndex, setEditDeviceIndex] = useState(null);
+  const [editInventoryId, setEditInventoryId] = useState(null);
+  const [labelDevice, setLabelDevice] = useState(null);
+  const [labelInventory, setLabelInventory] = useState(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [expandedRows, setExpandedRows] = useState({});
+  const labelRef = useRef(null);
   const [formData, setFormData] = useState({
     model: '',
     brand: '',
@@ -59,6 +70,78 @@ export default function InventoryList() {
   const handleEdit = (item) => {
     setEditItem(JSON.parse(JSON.stringify(item)));
     setShowEditModal(true);
+  };
+
+  const handleEditDevice = (inventoryId, device, deviceIndex, inventoryItem) => {
+    setEditInventoryId(inventoryId);
+    setEditDevice(JSON.parse(JSON.stringify(device)));
+    setEditDeviceIndex(deviceIndex);
+    setEditItem(inventoryItem);
+    setShowDeviceEditModal(true);
+  };
+
+  const handleUpdateDevice = async () => {
+    try {
+      const item = inventory.find(i => i._id === editInventoryId);
+      if (!item) return;
+      
+      const updatedDevices = [...item.devices];
+      updatedDevices[editDeviceIndex] = editDevice;
+      
+      await axios.put(`${import.meta.env.VITE_API_URL}/inventory/${editInventoryId}`, {
+        ...item,
+        devices: updatedDevices
+      });
+      
+      setShowDeviceEditModal(false);
+      setEditDevice(null);
+      setEditDeviceIndex(null);
+      setEditInventoryId(null);
+      fetchInventory();
+      alert('Device updated successfully!');
+    } catch (err) {
+      alert('Failed to update: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handlePrintLabel = async (device, inventoryItem) => {
+    setLabelDevice(device);
+    setLabelInventory(inventoryItem);
+    
+    // Generate QR code URL for device details page
+    const deviceUrl = `${window.location.origin}/device/${inventoryItem._id}/${device.imei}`;
+    try {
+      const qrUrl = await QRCode.toDataURL(deviceUrl, { width: 80, margin: 1 });
+      setQrCodeUrl(qrUrl);
+    } catch (err) {
+      console.error('QR generation error:', err);
+    }
+    
+    setShowLabelModal(true);
+  };
+
+  const printLabel = () => {
+    const printContent = labelRef.current;
+    const printWindow = window.open('', '', 'width=300,height=200');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Label</title>
+          <style>
+            @page { size: 2in 1in; margin: 0; }
+            body { margin: 0; padding: 0; }
+            .label { width: 2in; height: 1in; padding: 4px; box-sizing: border-box; font-family: Arial, sans-serif; }
+          </style>
+        </head>
+        <body>${printContent.innerHTML}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const handleUpdateItem = async () => {
@@ -253,12 +336,14 @@ export default function InventoryList() {
                             <button
                               onClick={() => handleEdit(item)}
                               style={{ background: '#eff6ff', border: 'none', color: '#2563eb', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}
+                              title="Edit Item"
                             >
                               <Edit size={18} />
                             </button>
                             <button
                               onClick={() => handleDelete(item._id)}
                               style={{ background: '#fef2f2', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}
+                              title="Delete Item"
                             >
                               <Trash2 size={18} />
                             </button>
@@ -274,7 +359,7 @@ export default function InventoryList() {
                                 Devices ({item.devices?.length || 0})
                               </h4>
                               {item.devices && item.devices.length > 0 ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '0.75rem' }}>
                                   {item.devices.map((device, idx) => (
                                     <div key={idx} style={{ 
                                       background: 'white', 
@@ -298,10 +383,25 @@ export default function InventoryList() {
                                       <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#1f2937', marginBottom: '0.5rem' }}>
                                         IMEI: {device.imei || 'N/A'}
                                       </div>
-                                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
                                         <span style={{ fontSize: '0.7rem', background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px' }}>{device.unlockStatus}</span>
                                         <span style={{ fontSize: '0.7rem', background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px' }}>{device.condition}</span>
                                         <span style={{ fontSize: '0.7rem', background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px' }}>{device.grade}</span>
+                                      </div>
+                                      {/* Edit and Print Label Buttons */}
+                                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                          onClick={() => handleEditDevice(item._id, device, idx, item)}
+                                          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '500' }}
+                                        >
+                                          <Edit size={14} /> Edit
+                                        </button>
+                                        <button
+                                          onClick={() => handlePrintLabel(device, item)}
+                                          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '500' }}
+                                        >
+                                          <Printer size={14} /> Print Label
+                                        </button>
                                       </div>
                                     </div>
                                   ))}
@@ -330,194 +430,87 @@ export default function InventoryList() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Model *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.model}
-                      onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                      placeholder="iPhone 15 Pro"
-                      style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                    />
+                    <input type="text" required value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} placeholder="iPhone 15 Pro" style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Brand *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.brand}
-                      onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                      placeholder="Apple"
-                      style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                    />
+                    <input type="text" required value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} placeholder="Apple" style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Storage</label>
-                    <input
-                      type="text"
-                      value={formData.specifications.storage}
-                      onChange={(e) => setFormData({ ...formData, specifications: { ...formData.specifications, storage: e.target.value } })}
-                      placeholder="256GB"
-                      style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                    />
+                    <input type="text" value={formData.specifications.storage} onChange={(e) => setFormData({ ...formData, specifications: { ...formData.specifications, storage: e.target.value } })} placeholder="256GB" style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Color</label>
-                    <input
-                      type="text"
-                      value={formData.specifications.color}
-                      onChange={(e) => setFormData({ ...formData, specifications: { ...formData.specifications, color: e.target.value } })}
-                      placeholder="Black"
-                      style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                    />
+                    <input type="text" value={formData.specifications.color} onChange={(e) => setFormData({ ...formData, specifications: { ...formData.specifications, color: e.target.value } })} placeholder="Black" style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Quantity *</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-                      style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                    />
+                    <input type="number" required min="1" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Cost Price *</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      value={formData.price.cost}
-                      onChange={(e) => setFormData({ ...formData, price: { ...formData.price, cost: parseFloat(e.target.value) } })}
-                      placeholder="999.00"
-                      style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                    />
+                    <input type="number" required min="0" step="0.01" value={formData.price.cost} onChange={(e) => setFormData({ ...formData, price: { ...formData.price, cost: parseFloat(e.target.value) } })} placeholder="999.00" style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Retail Price *</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      value={formData.price.retail}
-                      onChange={(e) => setFormData({ ...formData, price: { ...formData.price, retail: parseFloat(e.target.value) } })}
-                      placeholder="1199.00"
-                      style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                    />
+                    <input type="number" required min="0" step="0.01" value={formData.price.retail} onChange={(e) => setFormData({ ...formData, price: { ...formData.price, retail: parseFloat(e.target.value) } })} placeholder="1199.00" style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => { setShowModal(false); resetForm(); }}
-                    style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    style={{ flex: 1, padding: '0.75rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}
-                  >
-                    Add Item
-                  </button>
+                  <button type="button" onClick={() => { setShowModal(false); resetForm(); }} style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
+                  <button type="submit" style={{ flex: 1, padding: '0.75rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}>Add Item</button>
                 </div>
               </form>
             </div>
           </div>
         )}
 
-        {/* Edit Modal with IMEI Management */}
+        {/* Edit Item Modal */}
         {showEditModal && editItem && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
             <div style={{ background: 'white', borderRadius: '0.5rem', padding: '2rem', maxWidth: '800px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Edit Inventory Item</h2>
-                <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                  <X size={24} color="#6b7280" />
-                </button>
+                <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#6b7280" /></button>
               </div>
-
-              {/* Basic Info */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Model</label>
-                  <input
-                    type="text"
-                    value={editItem.model || ''}
-                    onChange={(e) => updateEditField('model', e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                  />
+                  <input type="text" value={editItem.model || ''} onChange={(e) => updateEditField('model', e.target.value)} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Brand</label>
-                  <input
-                    type="text"
-                    value={editItem.brand || ''}
-                    onChange={(e) => updateEditField('brand', e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                  />
+                  <input type="text" value={editItem.brand || ''} onChange={(e) => updateEditField('brand', e.target.value)} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                 </div>
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Storage</label>
-                  <input
-                    type="text"
-                    value={editItem.specifications?.storage || ''}
-                    onChange={(e) => updateEditSpec('storage', e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                  />
+                  <input type="text" value={editItem.specifications?.storage || ''} onChange={(e) => updateEditSpec('storage', e.target.value)} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Color</label>
-                  <input
-                    type="text"
-                    value={editItem.specifications?.color || ''}
-                    onChange={(e) => updateEditSpec('color', e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                  />
+                  <input type="text" value={editItem.specifications?.color || ''} onChange={(e) => updateEditSpec('color', e.target.value)} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Cost Price</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={editItem.price?.cost || 0}
-                    onChange={(e) => updateEditPrice('cost', e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                  />
+                  <input type="number" step="0.01" value={editItem.price?.cost || 0} onChange={(e) => updateEditPrice('cost', e.target.value)} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Retail Price</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={editItem.price?.retail || 0}
-                    onChange={(e) => updateEditPrice('retail', e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                  />
+                  <input type="number" step="0.01" value={editItem.price?.retail || 0} onChange={(e) => updateEditPrice('retail', e.target.value)} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
                 </div>
               </div>
-
-              {/* Devices/IMEIs Section */}
               <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Devices / IMEIs ({editItem.devices?.length || 0})</h3>
-                  <button
-                    onClick={addDevice}
-                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}
-                  >
-                    <Plus size={14} /> Add Device
-                  </button>
+                  <button onClick={addDevice} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}><Plus size={14} /> Add Device</button>
                 </div>
-
                 <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                   {editItem.devices && editItem.devices.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -526,31 +519,16 @@ export default function InventoryList() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                             <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Device #{idx + 1}</span>
                             <div style={{ flex: 1 }}></div>
-                            <button
-                              onClick={() => removeDevice(idx)}
-                              style={{ background: '#fee2e2', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer' }}
-                            >
-                              <Trash2 size={14} color="#dc2626" />
-                            </button>
+                            <button onClick={() => removeDevice(idx)} style={{ background: '#fee2e2', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer' }}><Trash2 size={14} color="#dc2626" /></button>
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '0.5rem' }}>
                             <div>
                               <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>IMEI</label>
-                              <input
-                                type="text"
-                                value={device.imei || ''}
-                                onChange={(e) => updateDeviceImei(idx, e.target.value)}
-                                placeholder="Enter IMEI"
-                                style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem', fontFamily: 'monospace' }}
-                              />
+                              <input type="text" value={device.imei || ''} onChange={(e) => updateDeviceImei(idx, e.target.value)} style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem', fontFamily: 'monospace' }} />
                             </div>
                             <div>
                               <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>Status</label>
-                              <select
-                                value={device.unlockStatus || 'unlocked'}
-                                onChange={(e) => updateDeviceField(idx, 'unlockStatus', e.target.value)}
-                                style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}
-                              >
+                              <select value={device.unlockStatus || 'unlocked'} onChange={(e) => updateDeviceField(idx, 'unlockStatus', e.target.value)} style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}>
                                 <option value="unlocked">Unlocked</option>
                                 <option value="locked">Locked</option>
                                 <option value="carrier_locked">Carrier</option>
@@ -558,11 +536,7 @@ export default function InventoryList() {
                             </div>
                             <div>
                               <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>Condition</label>
-                              <select
-                                value={device.condition || 'used'}
-                                onChange={(e) => updateDeviceField(idx, 'condition', e.target.value)}
-                                style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}
-                              >
+                              <select value={device.condition || 'used'} onChange={(e) => updateDeviceField(idx, 'condition', e.target.value)} style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}>
                                 <option value="new">New</option>
                                 <option value="refurbished">Refurbished</option>
                                 <option value="used">Used</option>
@@ -570,11 +544,7 @@ export default function InventoryList() {
                             </div>
                             <div>
                               <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>Sold?</label>
-                              <select
-                                value={device.isSold ? 'yes' : 'no'}
-                                onChange={(e) => updateDeviceField(idx, 'isSold', e.target.value === 'yes')}
-                                style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}
-                              >
+                              <select value={device.isSold ? 'yes' : 'no'} onChange={(e) => updateDeviceField(idx, 'isSold', e.target.value === 'yes')} style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}>
                                 <option value="no">No</option>
                                 <option value="yes">Yes</option>
                               </select>
@@ -588,21 +558,125 @@ export default function InventoryList() {
                   )}
                 </div>
               </div>
-
-              {/* Actions */}
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdateItem}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0.75rem', background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}
-                >
-                  <Save size={18} /> Save Changes
-                </button>
+                <button onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
+                <button onClick={handleUpdateItem} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0.75rem', background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}><Save size={18} /> Save Changes</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Single Device Modal */}
+        {showDeviceEditModal && editDevice && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+            <div style={{ background: 'white', borderRadius: '0.5rem', padding: '2rem', maxWidth: '500px', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Edit Device</h2>
+                <button onClick={() => setShowDeviceEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#6b7280" /></button>
+              </div>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>IMEI</label>
+                <input type="text" value={editDevice.imei || ''} onChange={(e) => setEditDevice({ ...editDevice, imei: e.target.value })} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontFamily: 'monospace' }} />
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Unlock Status</label>
+                  <select value={editDevice.unlockStatus || 'unlocked'} onChange={(e) => setEditDevice({ ...editDevice, unlockStatus: e.target.value })} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}>
+                    <option value="unlocked">Unlocked</option>
+                    <option value="locked">Locked</option>
+                    <option value="carrier_locked">Carrier Locked</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Condition</label>
+                  <select value={editDevice.condition || 'used'} onChange={(e) => setEditDevice({ ...editDevice, condition: e.target.value })} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}>
+                    <option value="new">New</option>
+                    <option value="refurbished">Refurbished</option>
+                    <option value="used">Used</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Grade</label>
+                  <input type="text" value={editDevice.grade || ''} onChange={(e) => setEditDevice({ ...editDevice, grade: e.target.value })} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Sold Status</label>
+                  <select value={editDevice.isSold ? 'yes' : 'no'} onChange={(e) => setEditDevice({ ...editDevice, isSold: e.target.value === 'yes' })} style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}>
+                    <option value="no">Available</option>
+                    <option value="yes">Sold</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={() => setShowDeviceEditModal(false)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
+                <button onClick={handleUpdateDevice} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0.75rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}><Save size={18} /> Save</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Print Label Modal */}
+        {showLabelModal && labelDevice && labelInventory && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+            <div style={{ background: 'white', borderRadius: '0.5rem', padding: '2rem', maxWidth: '400px', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Print Label</h2>
+                <button onClick={() => setShowLabelModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#6b7280" /></button>
+              </div>
+              
+              {/* Label Preview */}
+              <div style={{ border: '2px dashed #d1d5db', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', background: '#f9fafb' }}>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem', textAlign: 'center' }}>Label Preview (2" x 1")</p>
+                <div ref={labelRef} style={{ 
+                  width: '192px', 
+                  height: '96px', 
+                  background: 'white', 
+                  border: '1px solid #e5e7eb',
+                  margin: '0 auto',
+                  padding: '4px',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  {/* Barcode at top */}
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                    <Barcode 
+                      value={labelDevice.imei || '000000000000000'} 
+                      width={1} 
+                      height={30} 
+                      fontSize={8}
+                      margin={0}
+                      displayValue={true}
+                    />
+                  </div>
+                  {/* Model name and QR code at bottom */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '2px' }}>
+                    <div style={{ fontSize: '7px', fontWeight: 'bold', color: '#1f2937', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {labelInventory.model}
+                    </div>
+                    {qrCodeUrl && (
+                      <img src={qrCodeUrl} alt="QR" style={{ width: '28px', height: '28px' }} />
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Device Info */}
+              <div style={{ background: '#f3f4f6', borderRadius: '8px', padding: '0.75rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+                <div><strong>Model:</strong> {labelInventory.model}</div>
+                <div><strong>IMEI:</strong> {labelDevice.imei}</div>
+                <div><strong>Status:</strong> {labelDevice.unlockStatus} | {labelDevice.condition}</div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={() => setShowLabelModal(false)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
+                <button onClick={printLabel} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0.75rem', background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}><Printer size={18} /> Print</button>
               </div>
             </div>
           </div>
@@ -612,18 +686,13 @@ export default function InventoryList() {
         {showScanModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem', overflow: 'auto' }}>
             <div style={{ background: 'white', borderRadius: '0.5rem', maxWidth: '1000px', width: '100%', maxHeight: '95vh', overflow: 'auto', position: 'relative' }}>
-              <button
-                onClick={() => setShowScanModal(false)}
-                style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '2rem', height: '2rem', cursor: 'pointer', fontSize: '1.25rem', zIndex: 10 }}
-              >
-                ×
-              </button>
+              <button onClick={() => setShowScanModal(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '2rem', height: '2rem', cursor: 'pointer', fontSize: '1.25rem', zIndex: 10 }}>×</button>
               <InvoiceScanner onScanComplete={handleScanComplete} />
             </div>
           </div>
         )}
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
