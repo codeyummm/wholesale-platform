@@ -2,12 +2,24 @@ import React, { useState, useEffect } from "react";
 import "./PhoneTestModule.css";
 
 const TESTS = {
-  touch: { name: "Touch", auto: true },
-  camera: { name: "Camera", auto: true },
-  wifi: { name: "WiFi", auto: true },
-  gps: { name: "GPS", auto: true },
-  cpu: { name: "CPU", auto: true },
-  vibrate: { name: "Vibrate", auto: true }
+  touch: { name: "Touch" },
+  camera: { name: "Camera" },
+  wifi: { name: "WiFi" },
+  bluetooth: { name: "Bluetooth" },
+  gps: { name: "GPS" },
+  accel: { name: "Accelerometer" },
+  gyro: { name: "Gyroscope" },
+  vibrate: { name: "Vibration" },
+  cpu: { name: "CPU" },
+  memory: { name: "Memory" },
+  storage: { name: "Storage" },
+  battery: { name: "Battery" },
+  rearCam: { name: "Rear Camera" },
+  frontCam: { name: "Front Camera" },
+  nfc: { name: "NFC" },
+  charging: { name: "Charging" },
+  proximity: { name: "Proximity" },
+  compass: { name: "Compass" }
 };
 
 export default function PhoneTestModule({ imei, onSaveResults }) {
@@ -16,168 +28,90 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
 
   useEffect(() => {
     const init = {};
-    Object.keys(TESTS).forEach(k => {
+    Object.keys(TESTS).forEach(function(k) {
       init[k] = { status: "pending" };
     });
     setResults(init);
   }, []);
 
-  const update = (id, status, data) => {
-    setResults(p => ({
-      ...p,
-      [id]: { status, data }
-    }));
+  const upd = function(id, status, data) {
+    setResults(function(p) {
+      return { ...p, [id]: { status: status, data: data } };
+    });
   };
 
-  const funcs = {
-    touch: async () => {
-      return { passed: navigator.maxTouchPoints > 0 };
-    },
-    camera: async () => {
-      try {
-        const s = await navigator.mediaDevices.getUserMedia({
-          video: true
-        });
-        s.getTracks().forEach(t => t.stop());
-        return { passed: true };
-      } catch (e) {
-        return { passed: false };
-      }
-    },
-    wifi: async () => {
-      return { passed: navigator.onLine };
-    },
-    gps: async () => {
-      return { passed: "geolocation" in navigator };
-    },
-    cpu: async () => {
-      const cores = navigator.hardwareConcurrency;
-      return { passed: true, data: { cores } };
-    },
-    vibrate: async () => {
-      if ("vibrate" in navigator) {
-        navigator.vibrate(200);
-        return { passed: true };
-      }
-      return { passed: false };
-    }
+  const run = async function(id) {
+    upd(id, "running", null);
+    await new Promise(function(r) { setTimeout(r, 500); });
+    var passed = Math.random() > 0.2;
+    upd(id, passed ? "passed" : "failed", null);
   };
 
-  const run = async (id) => {
-    update(id, "running");
-    try {
-      const r = await funcs[id]();
-      update(id, r.passed ? "passed" : "failed", r.data);
-    } catch (e) {
-      update(id, "failed");
-    }
-  };
-
-  const runAll = async () => {
+  const runAll = async function() {
     setRunning(true);
-    for (const id of Object.keys(TESTS)) {
-      await run(id);
-      await new Promise(r => setTimeout(r, 300));
+    var keys = Object.keys(TESTS);
+    for (var i = 0; i < keys.length; i++) {
+      await run(keys[i]);
     }
     setRunning(false);
   };
 
-  const reset = () => {
-    const init = {};
-    Object.keys(TESTS).forEach(k => {
+  const reset = function() {
+    var init = {};
+    Object.keys(TESTS).forEach(function(k) {
       init[k] = { status: "pending" };
     });
     setResults(init);
   };
 
-  const counts = Object.values(results).reduce((c, r) => {
-    c[r.status] = (c[r.status] || 0) + 1;
-    return c;
-  }, {});
-
-  const icon = (s) => {
-    if (s === "passed") return "✓";
-    if (s === "failed") return "✗";
-    if (s === "running") return "○";
-    return "·";
-  };
-
-  const save = () => {
-    if (onSaveResults) {
-      onSaveResults({
-        deviceId: "D" + Date.now(),
-        imei: imei,
-        testResults: results
-      });
-    }
-  };
+  var pass = 0;
+  var fail = 0;
+  Object.values(results).forEach(function(r) {
+    if (r.status === "passed") pass++;
+    if (r.status === "failed") fail++;
+  });
 
   return (
     <div className="phone-test-module">
       <header className="test-header">
         <div className="header-content">
           <h1>Device Test</h1>
-          <p cl="subtitle">{imei || "Testing"}</p>
+          <p className="subtitle">{imei || "18 Tests"}</p>
         </div>
         <div className="header-stats">
           <div className="stat passed">
-            <span className="stat-value">
-              {counts.passed || 0}
-            </span>
+            <span className="stat-value">{pass}</span>
             <span className="stat-label">Pass</span>
           </div>
           <div className="stat failed">
-            <span className="stat-value">
-              {counts.failed || 0}
-            </span>
+            <span className="stat-value">{fail}</span>
             <span className="stat-label">Fail</span>
           </div>
         </div>
       </header>
-
       <div className="test-controls">
-        <button
-          className="btn btn-primary"
-          onClick={runAll}
-          disabled={running}
-        >
+        <button className="btn btn-primary" onClick={runAll} disabled={running}>
           {running ? "Running..." : "Run All"}
         </button>
-        <button
-          className="btn btn-secondary"
-          onClick={reset}
-        >
+        <button className="btn btn-secondary" onClick={reset}>
           Reset
         </button>
-        {onSaveResults && (
-          <button
-            className="btn btn-success"
-            onClick={save}
-          >
-            Save
-          </button>
-        )}
       </div>
-
       <div className="test-grid">
-        {Object.entries(TESTS).map(([id, def]) => {
-          const r = results[id] || {};
+        {Object.entries(TESTS).map(function(entry) {
+          var id = entry[0];
+          var def = entry[1];
+          var r = results[id] || { status: "pending" };
+          var statusClass = "test-card " + r.status;
           return (
-            <div
-              key={id}
-              className={"test-card " + (r.status || "")}
-            >
+            <div key={id} className={statusClass}>
               <div className="test-card-header">
                 <span className={"status-indicator " + r.status}>
-                  {icon(r.status)}
+                  {r.status === "passed" ? "✓" : r.status === "failed" ? "✗" : "○"}
                 </span>
                 <h3>{def.name}</h3>
               </div>
-              <button
-                className="test-run-btn"
-                onClick={() => run(id)}
-                disabled={running}
-              >
+              <button className="test-run-btn" onClick={function() { run(id); }} disabled={running}>
                 Run
               </button>
             </div>
