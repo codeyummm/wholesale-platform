@@ -21,7 +21,6 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
-// Save test results function
 const saveTestResults = async (testData) => {
   try {
     const response = await axios.post(`${import.meta.env.VITE_API_URL}/device-tests`, testData);
@@ -35,12 +34,10 @@ const saveTestResults = async (testData) => {
   }
 };
 
-// Device Test Page Component
 function DeviceTestPage() {
   return <PhoneTestModule onSaveResults={saveTestResults} />;
 }
 
-// Device Test with IMEI from URL
 function DeviceTestWithIMEI() {
   const { imei } = useParams();
   const [searchParams] = useSearchParams();
