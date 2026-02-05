@@ -117,13 +117,13 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
       <header className="test-header">
         <div className="header-content">
           <h1>Device Test</h1>
-          <p className="subtitle">{imei || "Testing"}</p>
+          <p cl="subtitle">{imei || "Testing"}</p>
         </div>
         <div className="header-stats">
           <div className="stat passed">
             <span className="stat-value">
               {counts.passed || 0}
-     </span>
+            </span>
             <span className="stat-label">Pass</span>
           </div>
           <div className="stat failed">
