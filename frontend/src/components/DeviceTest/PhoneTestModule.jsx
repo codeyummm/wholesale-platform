@@ -92,7 +92,7 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
 
       {modal === "touch" && <TouchModal onPass={() => done("touch", true)} onFail={() => done("touch", false)} onSkip={() => skip("touch")} />}
       {modal === "multiTouch" && <MultiTouchModal onPass={() => done("multiTouch", true)} onFail={() => done("multiTouch", false)} onSkip={() => skip("multiTouch")} />}
-      {mol === "display" && <DisplayModal onPass={() => done("display", true)} onFail={() => done("display", false)} onSkip={() => skip("display")} />}
+      {modal === "display" && <DisplayModal onPass={() => done("display", true)} onFail={() => done("display", false)} onSkip={() => skip("display")} />}
       {modal === "speaker" && <SpeakerModal onPass={() => done("speaker", true)} onFail={() => done("speaker", false)} onSkip={() => skip("speaker")} />}
       {modal === "mic" && <MicModal onPass={() => done("mic", true)} onFail={() => done("mic", false)} onSkip={() => skip("mic")} />}
       {modal === "vibration" && <VibrationModal onPass={() => done("vibration", true)} onFail={() => done("vibration", false)} onSkip={() => skip("vibration")} />}
