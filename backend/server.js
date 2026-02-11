@@ -32,10 +32,11 @@ app.use(cors({
   origin: [
     'https://wholesale-platform-vert.vercel.app',
     'http://localhost:5173',
-    'http://localhost:3000'
+    'http://loc:3000'
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCHallowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Health Check Routes
