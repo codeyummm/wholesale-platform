@@ -8,7 +8,6 @@ dotenv.config();
 
 const app = express();
 
-// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('✅ MongoDB Connected');
@@ -23,23 +22,25 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error('❌ MongoDB Error:', err));
 
-// Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(helmet());
 
-// CORS Configuration - Fixed for Production
 app.use(cors({
-  origin: [
-    'https://wholesale-platform-vert.vercel.app',
-    'http://localhost:5173',
-    'http://loc:3000'
-  ],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (origin === 'https://wholesale-platform-vert.vercel.app') {
+      return callback(null, true);
+    }
+    if (origin.stah('http://localhost:')) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Health Check Routes
 app.get('/', (req, res) => {
   res.json({ 
     success: true, 
@@ -58,7 +59,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/suppliers', require('./routes/supplier'));
@@ -70,7 +70,6 @@ app.use('/api/imei', require('./routes/imeiLookup'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/users', require('./routes/user'));
 
-// 404 Handler
 app.use((req, res) => {
   res.status(404).json({ 
     success: false, 
@@ -78,7 +77,6 @@ app.use((req, res) => {
   });
 });
 
-// Error Handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
   res.status(err.status || 500).json({ 
@@ -88,7 +86,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
