@@ -1,0 +1,15 @@
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+.env
+backend/.env
+frontend/.env
+.env.local
+.env.production
+frontend/dist/
+frontend/build/
+.DS_Store
+.cursor/
+.vscode/
+*.log
+npm-debug.log*

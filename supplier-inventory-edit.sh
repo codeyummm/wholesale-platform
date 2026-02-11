@@ -1,3 +1,7 @@
+#!/bin/bash
+echo "🔧 Adding editable inventory tab to supplier detail..."
+
+cat > frontend/src/components/Suppliers/SupplierList.jsx << 'SUPPLIEREOF'
 import React, { useEffect, useState } from 'react';
 import api from '../../utils/api';
 import InvoiceScanner from '../InvoiceScanner';
@@ -450,3 +454,6 @@ export default function SupplierList() {
     {showModal && renderModal()}
   </div>);
 }
+SUPPLIEREOF
+
+echo "✅ SupplierList updated with editable Inventory tab"

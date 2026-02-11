@@ -31,7 +31,8 @@ const inventorySchema = new mongoose.Schema({
     color: String,
     ram: String
   },
-  supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' }
+  supplier: { type: mongoose.Schema.Types.ObjectId, ref: "Supplier" },
+  supplierName: { type: String, default: "" },
 }, { timestamps: true });
 
 inventorySchema.virtual('availableQuantity').get(function() {

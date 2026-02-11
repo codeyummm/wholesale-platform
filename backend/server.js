@@ -25,14 +25,14 @@ app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 
 app.get('/', (req, res) => {
-  res.json({ success: true, message: 'Wholesale Platform API', version: '1.0.0' });
+  res.json({ success: true, message: 'Wholesale Platform API', version: '3.0.0' });
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     status: 'healthy',
-tabase: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
@@ -41,6 +41,11 @@ app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/suppliers', require('./routes/supplier'));
 app.use('/api/invoices', require('./routes/invoice'));
 app.use('/api/device-tests', require('./routes/deviceTest'));
+app.use('/api/customers', require('./routes/customer'));
+app.use('/api/sales', require('./routes/sale'));
+app.use('/api/imei', require('./routes/imeiLookup'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/users', require('./routes/user'));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

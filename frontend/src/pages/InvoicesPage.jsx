@@ -29,16 +29,25 @@ const InvoicesPage = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this invoice?')) return;
-    try { await api.delete(`/invoices/${id}`); fetchInvoices(); }
-    catch (err) { alert('Failed to delete'); }
+    try {
+      await api.delete(`/invoices/${id}`);
+      fetchInvoices();
+    } catch (err) { alert('Failed to delete'); }
   };
 
   const exportToCSV = () => {
     const headers = ['Invoice #', 'Supplier', 'Date', 'Total', 'Currency', 'Status'];
-    const rows = invoices.map(inv => [inv.invoiceNumber || '', inv.supplierName, inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : '', inv.totalAmount, inv.currency, inv.status]);
+    const rows = invoices.map(inv => [
+      inv.invoiceNumber || '', inv.supplierName,
+      inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : '',
+      inv.totalAmount, inv.currency, inv.status
+    ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'invoices.csv'; a.click();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'invoices.csv';
+    a.click();
   };
 
   const filteredInvoices = invoices.filter(inv => {
@@ -48,15 +57,28 @@ const InvoicesPage = () => {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-800">Invoices</h1><p className="text-gray-500">Manage scanned invoices</p></div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
+          <p className="text-gray-500">Manage scanned invoices</p>
+        </div>
         <div className="flex gap-3">
-          <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"><Download className="w-4 h-4" /> Export</button>
-          <button onClick={() => setShowScanner(!showScanner)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Plus className="w-4 h-4" /> Scan Invoice</button>
+          <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
+            <Download className="w-4 h-4" /> Export
+          </button>
+          <button onClick={() => setShowScanner(!showScanner)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <Plus className="w-4 h-4" /> Scan Invoice
+          </button>
         </div>
       </div>
-      {showScanner && <div className="mb-6"><InvoiceScanner onScanComplete={() => { setShowScanner(false); fetchInvoices(); }} /></div>}
+
+      {showScanner && (
+        <div className="mb-6">
+          <InvoiceScanner onScanComplete={() => { setShowScanner(false); fetchInvoices(); }} />
+        </div>
+      )}
+
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -71,6 +93,7 @@ const InvoicesPage = () => {
           </div>
         </div>
       </div>
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
@@ -96,8 +119,12 @@ const InvoicesPage = () => {
                     <td className="px-6 py-4">{inv.supplierName}</td>
                     <td className="px-6 py-4 text-gray-500">{inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : 'N/A'}</td>
                     <td className="px-6 py-4 text-right font-medium">${inv.totalAmount?.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-center"><span className={`px-2 py-1 text-xs rounded-full ${inv.status === 'processed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'}`}>{inv.status}</span></td>
-                    <td className="px-6 py-4 text-right"><button onClick={() => handleDelete(inv._id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="w-5 h-5" /></button></td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-2 py-1 text-xs rounded-full ${inv.status === 'processed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'}`}>{inv.status}</span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button onClick={() => handleDelete(inv._id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="w-5 h-5" /></button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

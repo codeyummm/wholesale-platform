@@ -71,7 +71,7 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
       </header>
 
       <div className="test-controls">
-  nSaveResults && (
+        {onSaveResults && (
           <button className="btn btn-success" onClick={() => onSaveResults({ imei, results, cnt })}>
             💾 Save
           </button>
@@ -147,7 +147,7 @@ function SimpleModal({ title, msg, onPass, onFail, onSkip }) {
 function TouchModal({ onPass, onFail, onSkip }) {
   const [pts, setPts] = useState([]);
   const h = e => {
-    const p =ay.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
+    const p = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
     setPts(p);
   };
   return (
@@ -318,7 +318,7 @@ function AccelModal({ onPass, onFail, onSkip }) {
   useEffect(() => {
     const h = e => {
       if (e.accelerationIncludingGravity) {
-        setD({ x: e.accelerationIncludingGravity.x?.toFixed(1) || 0, y: e.accelerationIncludingGravity.y?.toFixed(1) || 0, z: e.accelerationIncludingGravy.z?.toFixed(1) || 0 });
+        setD({ x: e.accelerationIncludingGravity.x?.toFixed(1) || 0, y: e.accelerationIncludingGravity.y?.toFixed(1) || 0, z: e.accelerationIncludingGravity.z?.toFixed(1) || 0 });
       }
     };
     window.addEventListener("devicemotion", h);
