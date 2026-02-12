@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import {
+import SaleScanner from '../SaleScanner';
   Plus, Search, Trash2, ChevronLeft, ChevronRight, Loader2,
   ShoppingCart, DollarSign, TrendingUp, X, Save, Smartphone,
   Receipt, Eye, Calendar, Filter, Truck, Package, MapPin, Copy, ExternalLink
@@ -57,6 +58,7 @@ export default function SalesList() {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSaleScanner, setShowSaleScanner] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [stats, setStats] = useState({ today: {}, thisMonth: {}, allTime: {} });
@@ -150,6 +152,71 @@ export default function SalesList() {
         }
       }));
     }
+  };
+
+  const handleScanComplete = (scanResult) => {
+    // Process scanned device data
+    if (scanResult.device && scanResult.device.imei) {
+      const device = scanResult.device;
+      
+      // Try to find matching inventory item by IMEI
+      let matchedInventory = null;
+      let matchedDevice = null;
+      
+      for (const inv of inventory) {
+        const foundDevice = inv.devices?.find(d => d.imei === device.imei && !d.isSold);
+        if (foundDevice) {
+          matchedInventory = inv;
+          matchedDevice = foundDevice;
+          break;
+        }
+      }
+      
+      if (matchedInventory && matchedDevice) {
+        // Add to sale items
+        const newItem = {
+          inventoryId: matchedInventory._id,
+          imei: matchedDevice.imei,
+          description: `${matchedInventory.brand} ${matchedInventory.model} ${matchedInventory.specifications?.storage || ''} ${matchedInventory.specifications?.color || ''}`.trim(),
+          costPrice: matchedInventory.price?.cost || 0,
+          salePrice: matchedInventory.price?.retail || 0,
+          profit: (matchedInventory.price?.retail || 0) - (matchedInventory.price?.cost || 0)
+        };
+        
+        setSaleForm(prev => ({
+          ...prev,
+          items: [...prev.items, newItem]
+        }));
+        
+        alert(`Device added: ${newItem.description}`);
+      } else {
+        alert(`Device with IMEI ${device.imei} not found in inventory. Please add manually.`);
+      }
+    }
+    
+    // Process shipping info if available
+    if (scanResult.shipping) {
+      const shipping = scanResult.shipping;
+      setSaleForm(prev => ({
+        ...prev,
+        shipping: {
+          ...prev.shipping,
+          trackingNumber: shipping.tracking_number || prev.shipping.trackingNumber,
+          carrier: shipping.carrier || prev.shipping.carrier,
+          address: {
+            ...prev.shipping.address,
+            name: shipping.recipient_name || prev.shipping.address.name,
+            street: shipping.recipient_address || prev.shipping.address.street,
+            city: shipping.recipient_city || prev.shipping.address.city,
+            state: shipping.recipient_state || prev.shipping.address.state,
+            zipCode: shipping.recipient_zip || prev.shipping.address.zipCode,
+          }
+        }
+      }));
+      setShowShipping(true);
+    }
+    
+    setShowSaleScanner(false);
   };
 
   const handleTrackingChange = (val) => {
@@ -710,6 +777,18 @@ export default function SalesList() {
 
             <button onClick={() => setShowDetailModal(false)}
               style={{ marginTop: '16px', width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Sale Scanner Modal */}
+      {showSaleScanner && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '12px', maxWidth: '600px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+            <SaleScanner 
+              onScanComplete={handleScanComplete}
+              onClose={() => setShowSaleScanner(false)}
+            />
           </div>
         </div>
       )}

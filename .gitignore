@@ -13,3 +13,4 @@ frontend/build/
 .vscode/
 *.log
 npm-debug.log*
+backend/temp/
