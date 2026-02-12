@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import {
 import SaleScanner from '../SaleScanner';
+import {
   Plus, Search, Trash2, ChevronLeft, ChevronRight, Loader2,
   ShoppingCart, DollarSign, TrendingUp, X, Save, Smartphone,
   Receipt, Eye, Calendar, Filter, Truck, Package, MapPin, Copy, ExternalLink
