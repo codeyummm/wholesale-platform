@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Search, Trash2, Download, Plus, Camera, ChevronDown, ChevronUp, Loader2, Eye } from 'lucide-react';
 import api from '../utils/api';
 import InvoiceScanner from '../components/InvoiceScanner';
@@ -70,7 +70,6 @@ const InvoicesPage = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '2rem' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937' }}>Invoice Management</h1>
           <div style={{ display: 'flex', gap: '1rem' }}>
@@ -83,7 +82,6 @@ const InvoicesPage = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
           <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} size={20} />
           <input
@@ -95,7 +93,6 @@ const InvoicesPage = () => {
           />
         </div>
 
-        {/* Loading */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
             <Loader2 size={48} color="#667eea" style={{ margin: '0 auto', animation: 'spin 1s linear infinite' }} />
@@ -204,7 +201,6 @@ const InvoicesPage = () => {
           </div>
         )}
 
-        {/* Scanner Modal */}
         {showScanner && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem', overflow: 'auto' }}>
             <div style={{ background: 'white', borderRadius: '0.5rem', maxWidth: '1000px', width: '100%', maxHeight: '95vh', overflow: 'auto', position: 'relative' }}>
