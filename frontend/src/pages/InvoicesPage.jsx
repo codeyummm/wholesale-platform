@@ -8,11 +8,11 @@ const InvoicesPage = () => {
   const [loading, setLoading] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showItemEditModal, setShowItemEditModal] = useState(false);
+  const [showProductEditModal, setShowProductEditModal] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
   const [editInvoice, setEditInvoice] = useState(null);
-  const [editItem, setEditItem] = useState(null);
-  const [editItemIndex, setEditItemIndex] = useState(null);
+  const [editProduct, setEditProduct] = useState(null);
+  const [editProductIndex, setEditProductIndex] = useState(null);
   const [editInvoiceId, setEditInvoiceId] = useState(null);
   const [filters, setFilters] = useState({ search: '', startDate: '', endDate: '' });
 
@@ -34,7 +34,7 @@ const InvoicesPage = () => {
     }
   };
 
-  useEffect(() => { fetchInvoices(); }, [filters.startDate, filters.endDate]);
+  useEffect(() => { fetchInvoices(); }, [filters.startDate, filters.endDate, filters.search]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this invoice?')) return;
@@ -63,42 +63,49 @@ const InvoicesPage = () => {
     }
   };
 
-  const handleEditItem = (invoiceId, item, itemIndex) => {
+  const handleEditProduct = (invoiceId, product, productIndex) => {
     setEditInvoiceId(invoiceId);
-    setEditItem(JSON.parse(JSON.stringify(item)));
-    setEditItemIndex(itemIndex);
-    setShowItemEditModal(true);
+    setEditProduct(JSON.parse(JSON.stringify(product)));
+    setEditProductIndex(productIndex);
+    setShowProductEditModal(true);
   };
 
-  const handleUpdateItem = async () => {
+  const handleUpdateProduct = async () => {
     try {
       const invoice = invoices.find(i => i._id === editInvoiceId);
       if (!invoice) return;
-      const updatedItems = [...invoice.items];
-      updatedItems[editItemIndex] = editItem;
-      await api.put(`/invoices/${editInvoiceId}`, { ...invoice, items: updatedItems });
-      setShowItemEditModal(false);
-      setEditItem(null);
-      setEditItemIndex(null);
+      const updatedProducts = [...invoice.products];
+      updatedProducts[editProductIndex] = editProduct;
+      await api.put(`/invoices/${editInvoiceId}`, { ...invoice, products: updatedProducts });
+      setShowProductEditModal(false);
+      setEditProduct(null);
+      setEditProductIndex(null);
       setEditInvoiceId(null);
       fetchInvoices();
-      alert('Item updated successfully!');
+      alert('Product updated successfully!');
     } catch (err) {
       alert('Failed to update: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const addItem = () => {
+  const addProduct = () => {
     setEditInvoice(prev => ({
       ...prev,
-      items: [...(prev.items || []), { description: '', imei: '', quantity: 1, unitPrice: 0 }]
+      products: [...(prev.products || []), { 
+        name: '', 
+        brand: '', 
+        model: '', 
+        quantity: 1, 
+        unitPrice: 0,
+        imeis: []
+      }]
     }));
   };
 
-  const removeItem = (itemIndex) => {
+  const removeProduct = (productIndex) => {
     setEditInvoice(prev => ({
       ...prev,
-      items: prev.items.filter((_, i) => i !== itemIndex)
+      products: prev.products.filter((_, i) => i !== productIndex)
     }));
   };
 
@@ -106,11 +113,11 @@ const InvoicesPage = () => {
     setEditInvoice(prev => ({ ...prev, [field]: value }));
   };
 
-  const updateItemField = (itemIndex, field, value) => {
+  const updateProductField = (productIndex, field, value) => {
     setEditInvoice(prev => {
-      const newItems = [...(prev.items || [])];
-      newItems[itemIndex] = { ...newItems[itemIndex], [field]: value };
-      return { ...prev, items: newItems };
+      const newProducts = [...(prev.products || [])];
+      newProducts[productIndex] = { ...newProducts[productIndex], [field]: value };
+      return { ...prev, products: newProducts };
     });
   };
 
@@ -192,7 +199,7 @@ const InvoicesPage = () => {
                   <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Invoice #</th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Supplier</th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Date</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Items</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Products</th>
                   <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#374151' }}>Total</th>
                   <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#374151' }}>Status</th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Actions</th>
@@ -211,14 +218,14 @@ const InvoicesPage = () => {
                         </td>
                         <td style={{ padding: '1rem' }}>
                           <div style={{ fontWeight: '600', color: '#111827' }}>#{inv.invoiceNumber || 'N/A'}</div>
-                          {inv.pdfUrl && <span style={{ fontSize: '0.7rem', background: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', marginTop: '4px', display: 'inline-block' }}>PDF</span>}
+                          {inv.imageUrl && <span style={{ fontSize: '0.7rem', background: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', marginTop: '4px', display: 'inline-block' }}>PDF</span>}
                         </td>
                         <td style={{ padding: '1rem', color: '#6b7280' }}>{inv.supplierName}</td>
                         <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
                           {inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : 'N/A'}
                         </td>
                         <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                          {inv.items?.length || 0} products
+                          {inv.products?.length || 0} items
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'right' }}>
                           <div style={{ fontWeight: '600', color: '#059669' }}>${inv.totalAmount?.toFixed(2) || '0.00'}</div>
@@ -234,8 +241,8 @@ const InvoicesPage = () => {
                             <button onClick={() => handleEdit(inv)} style={{ background: '#eff6ff', border: 'none', color: '#2563eb', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }} title="Edit Invoice">
                               <Edit size={18} />
                             </button>
-                            {inv.pdfUrl && (
-                              <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ background: '#f0fdf4', border: 'none', color: '#16a34a', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px', display: 'flex' }} title="View PDF">
+                            {inv.imageUrl && (
+                              <a href={inv.imageUrl} target="_blank" rel="noopener noreferrer" style={{ background: '#f0fdf4', border: 'none', color: '#16a34a', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px', display: 'flex' }} title="View PDF">
                                 <Eye size={18} />
                               </a>
                             )}
@@ -249,28 +256,34 @@ const InvoicesPage = () => {
                         <tr>
                           <td colSpan="8" style={{ padding: '0', background: '#f9fafb' }}>
                             <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #e5e7eb' }}>
-                              <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}>Invoice Items ({inv.items?.length || 0})</h4>
-                              {inv.items && inv.items.length > 0 ? (
+                              <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}>Products ({inv.products?.length || 0})</h4>
+                              {inv.products && inv.products.length > 0 ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '0.75rem' }}>
-                                  {inv.items.map((item, idx) => (
+                                  {inv.products.map((product, idx) => (
                                     <div key={idx} style={{ background: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                         <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#6b7280' }}>#{idx + 1}</span>
-                                        <button onClick={() => handleEditItem(inv._id, item, idx)} style={{ background: '#eff6ff', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', fontSize: '0.7rem', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <button onClick={() => handleEditProduct(inv._id, product, idx)} style={{ background: '#eff6ff', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', fontSize: '0.7rem', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                           <Edit size={12} /> Edit
                                         </button>
                                       </div>
-                                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>{item.description || 'No description'}</div>
-                                      {item.imei && <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>IMEI: {item.imei}</div>}
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Qty: {item.quantity || 1}</span>
-                                        <span style={{ fontWeight: '600', color: '#059669' }}>${item.unitPrice?.toFixed(2) || '0.00'}</span>
+                                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>{product.name || product.fullDescription || 'No description'}</div>
+                                      {product.model && <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Model: {product.model}</div>}
+                                      {product.brand && <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Brand: {product.brand}</div>}
+                                      {product.imeis && product.imeis.length > 0 && (
+                                        <div style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#6b7280', marginBottom: '0.5rem', maxHeight: '40px', overflowY: 'auto' }}>
+                                          {product.imeis.map((imei, i) => <div key={i}>IMEI: {imei}</div>)}
+                                        </div>
+                                      )}
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #f3f4f6' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Qty: {product.quantity || 1}</span>
+                                        <span style={{ fontWeight: '600', color: '#059669' }}>${product.unitPrice?.toFixed(2) || '0.00'}</span>
                                       </div>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>No items available</p>
+                                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>No products available</p>
                               )}
                             </div>
                           </td>
@@ -337,43 +350,47 @@ const InvoicesPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Currency</label>
-                  <input
-                    type="text"
-                    value={editInvoice.currency || 'USD'}
-                    onChange={(e) => updateInvoiceField('currency', e.target.value)}
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Status</label>
+                  <select
+                    value={editInvoice.status || 'pending'}
+                    onChange={(e) => updateInvoiceField('status', e.target.value)}
                     style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
-                  />
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="processed">Processed</option>
+                    <option value="verified">Verified</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Items Section */}
+              {/* Products Section */}
               <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Items ({editInvoice.items?.length || 0})</h3>
-                  <button onClick={addItem} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
-                    <Plus size={14} /> Add Item
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Products ({editInvoice.products?.length || 0})</h3>
+                  <button onClick={addProduct} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Product
                   </button>
                 </div>
                 <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  {editInvoice.items && editInvoice.items.length > 0 ? (
+                  {editInvoice.products && editInvoice.products.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {editInvoice.items.map((item, idx) => (
+                      {editInvoice.products.map((product, idx) => (
                         <div key={idx} style={{ background: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Item #{idx + 1}</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Product #{idx + 1}</span>
                             <div style={{ flex: 1 }}></div>
-                            <button onClick={() => removeItem(idx)} style={{ background: '#fee2e2', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer' }}>
+                            <button onClick={() => removeProduct(idx)} style={{ background: '#fee2e2', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer' }}>
                               <Trash2 size={14} color="#dc2626" />
                             </button>
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.5rem' }}>
                             <div>
-                              <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>Description</label>
+                              <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>Name</label>
                               <input
                                 type="text"
-                                value={item.description || ''}
-                                onChange={(e) => updateItemField(idx, 'description', e.target.value)}
+                                value={product.name || ''}
+                                onChange={(e) => updateProductField(idx, 'name', e.target.value)}
                                 style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}
                               />
                             </div>
@@ -381,8 +398,8 @@ const InvoicesPage = () => {
                               <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>Quantity</label>
                               <input
                                 type="number"
-                                value={item.quantity || 1}
-                                onChange={(e) => updateItemField(idx, 'quantity', parseInt(e.target.value))}
+                                value={product.quantity || 1}
+                                onChange={(e) => updateProductField(idx, 'quantity', parseInt(e.target.value))}
                                 style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}
                               />
                             </div>
@@ -391,26 +408,17 @@ const InvoicesPage = () => {
                               <input
                                 type="number"
                                 step="0.01"
-                                value={item.unitPrice || 0}
-                                onChange={(e) => updateItemField(idx, 'unitPrice', parseFloat(e.target.value))}
+                                value={product.unitPrice || 0}
+                                onChange={(e) => updateProductField(idx, 'unitPrice', parseFloat(e.target.value))}
                                 style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem' }}
                               />
                             </div>
-                          </div>
-                          <div style={{ marginTop: '0.5rem' }}>
-                            <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>IMEI (optional)</label>
-                            <input
-                              type="text"
-                              value={item.imei || ''}
-                              onChange={(e) => updateItemField(idx, 'imei', e.target.value)}
-                              style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.85rem', fontFamily: 'monospace' }}
-                            />
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p style={{ textAlign: 'center', color: '#9ca3af', padding: '1rem' }}>No items. Click "Add Item" to add items.</p>
+                    <p style={{ textAlign: 'center', color: '#9ca3af', padding: '1rem' }}>No products. Click "Add Product" to add products.</p>
                   )}
                 </div>
               </div>
@@ -427,35 +435,46 @@ const InvoicesPage = () => {
           </div>
         )}
 
-        {/* Edit Item Modal */}
-        {showItemEditModal && editItem && (
+        {/* Edit Product Modal */}
+        {showProductEditModal && editProduct && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
             <div style={{ background: 'white', borderRadius: '0.5rem', padding: '2rem', maxWidth: '500px', width: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Edit Item</h2>
-                <button onClick={() => setShowItemEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Edit Product</h2>
+                <button onClick={() => setShowProductEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                   <X size={24} color="#6b7280" />
                 </button>
               </div>
               
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Description</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Name</label>
                 <input
                   type="text"
-                  value={editItem.description || ''}
-                  onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
+                  value={editProduct.name || ''}
+                  onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })}
                   style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
                 />
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>IMEI</label>
-                <input
-                  type="text"
-                  value={editItem.imei || ''}
-                  onChange={(e) => setEditItem({ ...editItem, imei: e.target.value })}
-                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontFamily: 'monospace' }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Brand</label>
+                  <input
+                    type="text"
+                    value={editProduct.brand || ''}
+                    onChange={(e) => setEditProduct({ ...editProduct, brand: e.target.value })}
+                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Model</label>
+                  <input
+                    type="text"
+                    value={editProduct.model || ''}
+                    onChange={(e) => setEditProduct({ ...editProduct, model: e.target.value })}
+                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -463,8 +482,8 @@ const InvoicesPage = () => {
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Quantity</label>
                   <input
                     type="number"
-                    value={editItem.quantity || 1}
-                    onChange={(e) => setEditItem({ ...editItem, quantity: parseInt(e.target.value) })}
+                    value={editProduct.quantity || 1}
+                    onChange={(e) => setEditProduct({ ...editProduct, quantity: parseInt(e.target.value) })}
                     style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
                   />
                 </div>
@@ -473,18 +492,18 @@ const InvoicesPage = () => {
                   <input
                     type="number"
                     step="0.01"
-                    value={editItem.unitPrice || 0}
-                    onChange={(e) => setEditItem({ ...editItem, unitPrice: parseFloat(e.target.value) })}
+                    value={editProduct.unitPrice || 0}
+                    onChange={(e) => setEditProduct({ ...editProduct, unitPrice: parseFloat(e.target.value) })}
                     style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button onClick={() => setShowItemEditModal(false)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}>
+                <button onClick={() => setShowProductEditModal(false)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontWeight: '500' }}>
                   Cancel
                 </button>
-                <button onClick={handleUpdateItem} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0.75rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}>
+                <button onClick={handleUpdateProduct} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0.75rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}>
                   <Save size={18} /> Save
                 </button>
               </div>
