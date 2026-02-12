@@ -620,7 +620,7 @@ const InvoicesPage = () => {
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem', overflow: 'auto' }}>
             <div style={{ background: 'white', borderRadius: '0.5rem', maxWidth: '1000px', width: '100%', maxHeight: '95vh', overflow: 'auto', position: 'relative' }}>
               <button onClick={() => setShowScanner(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '2rem', height: '2rem', cursor: 'pointer', fontSize: '1.25rem', zIndex: 10 }}>×</button>
-              InvoiceScanner onScanComplete={handleScanComplete} />
+              <InvoiceScanner onScanComplete={handleScanComplete} />
             </div>
           </div>
         )}

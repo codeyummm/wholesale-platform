@@ -440,7 +440,12 @@ export default function SalesList() {
           <div style={{ background: 'white', borderRadius: '12px', padding: '28px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>Create New Sale</h2>
-              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={22} color="#64748b" /></button>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button onClick={() => setShowSaleScanner(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
+                  <Camera size={16} /> Scan Sale
+                </button>
+                <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={22} color="#64748b" /></button>
+              </div>
             </div>
 
             {/* Customer + Channel */}
