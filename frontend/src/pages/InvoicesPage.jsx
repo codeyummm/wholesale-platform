@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Search, Calendar, Trash2, Download, Plus, ChevronDown, Loader2, Eye, Package } from 'lucide-react';
+import { FileText, Search, Trash2, Download, Plus, Camera, ChevronDown, ChevronUp, Loader2, Eye } from 'lucide-react';
 import api from '../utils/api';
 import InvoiceScanner from '../components/InvoiceScanner';
 
@@ -7,7 +7,7 @@ const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
-  const [expandedInvoice, setExpandedInvoice] = useState(null);
+  const [expandedRows, setExpandedRows] = useState({});
   const [filters, setFilters] = useState({ search: '', startDate: '', endDate: '' });
 
   const fetchInvoices = async () => {
@@ -64,144 +64,157 @@ const InvoicesPage = () => {
     return inv.invoiceNumber?.toLowerCase().includes(s) || inv.supplierName?.toLowerCase().includes(s);
   });
 
-  const toggleExpand = (id) => {
-    setExpandedInvoice(expandedInvoice === id ? null : id);
-  };
+  const toggleRow = (id) => setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  const handleScanComplete = () => { setShowScanner(false); fetchInvoices(); };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
-            <p className="text-gray-500">Manage scanned invoices</p>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <Download className="w-4 h-4" /> Export
+    <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '2rem' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937' }}>Invoice Management</h1>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={exportToCSV} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #d1d5db', color: '#374151', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: '500' }}>
+              <Download size={20} />Export
             </button>
-            <button onClick={() => setShowScanner(!showScanner)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" /> Scan Invoice
+            <button onClick={() => setShowScanner(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
+              <Camera size={20} />Scan Invoice
             </button>
           </div>
         </div>
 
-        {showScanner && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] overflow-auto relative">
-              <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10">×</button>
-              <InvoiceScanner onScanComplete={() => { setShowScanner(false); fetchInvoices(); }} />
-            </div>
+        {/* Search */}
+        <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} size={20} />
+          <input
+            type="text"
+            placeholder="Search by invoice number or supplier..."
+            value={filters.search}
+            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+            style={{ width: '100%', paddingLeft: '3rem', padding: '0.75rem 1rem 0.75rem 3rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem' }}
+          />
+        </div>
+
+        {/* Loading */}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
+            <Loader2 size={48} color="#667eea" style={{ margin: '0 auto', animation: 'spin 1s linear infinite' }} />
+            <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading invoices...</p>
+          </div>
+        ) : filteredInvoices.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
+            <FileText size={48} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
+            <p style={{ color: '#6b7280', marginBottom: '1rem' }}>No invoices found</p>
+            <button onClick={() => setShowScanner(true)} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}>
+              Scan Invoice
+            </button>
+          </div>
+        ) : (
+          <div style={{ background: 'white', borderRadius: '0.5rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                <tr>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151', width: '40px' }}></th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Invoice #</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Supplier</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Date</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Items</th>
+                  <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#374151' }}>Total</th>
+                  <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#374151' }}>Status</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredInvoices.map((inv) => {
+                  const isExpanded = expandedRows[inv._id];
+                  return (
+                    <React.Fragment key={inv._id}>
+                      <tr style={{ borderBottom: '1px solid #e5e7eb', background: isExpanded ? '#f9fafb' : 'white' }}>
+                        <td style={{ padding: '1rem' }}>
+                          <button onClick={() => toggleRow(inv._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}>
+                            {isExpanded ? <ChevronUp size={20} color="#6b7280" /> : <ChevronDown size={20} color="#6b7280" />}
+                          </button>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: '600', color: '#111827' }}>#{inv.invoiceNumber || 'N/A'}</div>
+                          {inv.pdfUrl && <span style={{ fontSize: '0.7rem', background: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', marginTop: '4px', display: 'inline-block' }}>PDF</span>}
+                        </td>
+                        <td style={{ padding: '1rem', color: '#6b7280' }}>{inv.supplierName}</td>
+                        <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                          {inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : 'N/A'}
+                        </td>
+                        <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                          {inv.items?.length || 0} products
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <div style={{ fontWeight: '600', color: '#059669' }}>${inv.totalAmount?.toFixed(2) || '0.00'}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{inv.currency || 'USD'}</div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '500', background: inv.status === 'processed' ? '#d1fae5' : '#e5e7eb', color: inv.status === 'processed' ? '#065f46' : '#374151' }}>
+                            {inv.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {inv.pdfUrl && (
+                              <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ background: '#eff6ff', border: 'none', color: '#2563eb', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px', display: 'flex' }} title="View PDF">
+                                <Eye size={18} />
+                              </a>
+                            )}
+                            <a href={inv.pdfUrl} download style={{ background: '#f0fdf4', border: 'none', color: '#16a34a', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px', display: 'flex' }} title="Download">
+                              <Download size={18} />
+                            </a>
+                            <button onClick={() => handleDelete(inv._id)} style={{ background: '#fef2f2', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }} title="Delete">
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan="8" style={{ padding: '0', background: '#f9fafb' }}>
+                            <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #e5e7eb' }}>
+                              <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}>Invoice Items ({inv.items?.length || 0})</h4>
+                              {inv.items && inv.items.length > 0 ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '0.75rem' }}>
+                                  {inv.items.map((item, idx) => (
+                                    <div key={idx} style={{ background: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>{item.description || 'No description'}</div>
+                                      {item.imei && <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>IMEI: {item.imei}</div>}
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Qty: {item.quantity || 1}</span>
+                                        <span style={{ fontWeight: '600', color: '#059669' }}>${item.unitPrice?.toFixed(2) || '0.00'}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>No items available</p>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-m border border-gray-200 mb-6">
-          <div className="flex border-b border-gray-200">
-            <button className="px-6 py-3 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600">
-              <FileText className="w-4 h-4 inline mr-2" />Invoices
-            </button>
-            <button className="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
-              <Package className="w-4 h-4 inline mr-2" />Products
-            </button>
-            <button onClick={() => setShowScanner(true)} className="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
-              <Plus className="w-4 h-4 inline mr-2" />Scan Invoice
-            </button>
-          </div>
-          <div className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input type="text" placeholder="Search invoices..." value={filters.search} onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <input type="date" value={filters.startDate} onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                <span className="text-gray-500">to</span>
-                <input type="date" value={filters.endDate} onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
+        {/* Scanner Modal */}
+        {showScanner && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem', overflow: 'auto' }}>
+            <div style={{ background: 'white', borderRadius: '0.5rem', maxWidth: '1000px', width: '100%', maxHeight: '95vh', overflow: 'auto', position: 'relative' }}>
+              <button onClick={() => setShowScanner(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '2rem', height: '2rem', cursor: 'pointer', fontSize: '1.25rem', zIndex: 10 }}>×</button>
+              <InvoiceScanner onScanComplete={handleScanComplete} />
             </div>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
-        ) : filteredInvoices.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 text-center py-12">
-            <FileText className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 mb-4">No invoices found</p>
-            <button onClick={() => setShowScanner(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Scan Your First Invoice</button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredInvoices.map((inv) => (
-              <div key={inv._id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                <div className="flex items-center p-4 gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-14 h-14 bg-red-50 rounded-lg flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-red-500" />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-lg font-semibold text-gray-900">#{inv.invoiceNumber || 'N/A'}</h3>
-                      <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded">{inv.status}</span>
-                      {inv.pdfUrl && <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded">PDF</span>}
-                    </div>
-                    <p className="text-sm text-gray-500">{inv.items?.length || 0} products · {inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : 'No date'}</p>
-                    {inv.supplierName && <p className="text-sm text-gray-600 mt-1">Supplier: {inv.supplierName}</p>}
-                  </div>
-                  <div className="flex-shrink-0 text-right">                    <div className="text-2xl font-bold text-gray-900">${inv.totalAmount?.toFixed(2) || '0.00'}</div>
-                    <div className="text-xs text-gray-500">{inv.currency || 'USD'}</div>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center gap-2">
-                    {inv.pdfUrl && (
-                      <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="View PDF">
-                        <Eye className="w-5 h-5" />
-                      </a>
-                    )}
-                    <a href={inv.pdfUrl} download className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Download">
-                      <Download className="w-5 h-5" />
-                    </a>
-                    <button onClick={() => toggleExpand(inv._id)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <ChevronDown className={`w-5 h-5 transition-transform ${expandedInvoice === inv._id ? 'rotate-180' : ''}`} />
-                    </button>
-                  </div>
-                </div>
-                {expandedInvoice === inv._id && (
-                  <div className="border-t border-gray-200 p-4 bg-gray-50">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Invoice Items ({inv.items?.length || 0})</h4>
-                    {inv.items && inv.items.length > 0 ? (
-                      <div className="space-y-2">
-                        {inv.items.map((item, idx) => (
-                          <div key={idx} className="bg-white p-3 rounded-lg border border-gray-200">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{item.description || 'No description'}</p>
-                                <p className="text-sm text-gray-500 mt-1">{item.imei && <span className="font-mono">IMEI: {item.imei}</span>}</p>
-                              </div>
-                              <div className="text-right ml-4">
-                                <p className="font-semibold text-gray-900">${item.unitPrice?.toFixed(2) || '0.00'}</p>
-                                <p className="text-xs text-gray-500">Qty: {item.quantity || 1}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">No items available</p>
-                    )}
-                    <div className="mt-4 flex justify-end">
-                      <button onClick={() => handleDelete(inv._id)} className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                        <Trash2 className="w-4 h-4" />Delete Invoice
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         )}
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
