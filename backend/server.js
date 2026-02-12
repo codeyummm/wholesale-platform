@@ -31,7 +31,7 @@ app.use(cors({
     if (origin === 'https://wholesale-platform-vert.vercel.app') {
       return callback(null, true);
     }
-    if (origin.stah('http://localhost:')) {
+    if (origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
     callback(new Error('Not allowed by CORS'));
