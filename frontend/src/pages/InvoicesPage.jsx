@@ -112,7 +112,7 @@ const InvoicesPage = () => {
   const [viewingInvNum, setViewingInvNum] = useState('');
 
   const fetchInvoices = async () => {
-   Loading(true);
+   setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filters.search) params.append('search', filters.search);
