@@ -3,11 +3,17 @@
 
 echo "Installing Python OCR dependencies..."
 
-# Install Tesseract OCR
-apt-get update
-apt-get install -y tesseract-ocr
+# Detect OS and install Tesseract
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    brew install tesseract
+elif [[ -f /etc/debian_version ]]; then
+    # Debian/Ubuntu
+    apt-get update
+    apt-get install -y tesseract-ocr
+fi
 
 # Install Python packages
-pip3 install -r requirements.txt --break-system-packages
+pip3 install -r requirements.txt
 
 echo "✅ OCR setup complete!"
