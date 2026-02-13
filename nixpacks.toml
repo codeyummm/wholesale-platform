@@ -2,7 +2,7 @@
 nixPkgs = ['tesseract', 'python39', 'python39Packages.pip']
 
 [phases.install]
-cmds = ['npm ci']
+cmds = ['cd backend && npm ci']
 
 [phases.build]
 cmds = [
@@ -10,4 +10,4 @@ cmds = [
 ]
 
 [start]
-cmd = 'npm start'
+cmd = 'cd backend && npm start'
