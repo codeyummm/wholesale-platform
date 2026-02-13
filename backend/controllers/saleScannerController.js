@@ -4,7 +4,7 @@ exports.scanLabel = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No image uploaded' });
     }
 
-    // Return mock data (OCR setup in progress)
+    // Mock OCR result
     const mockResult = {
       device: {
         imei: "123456789012345",
