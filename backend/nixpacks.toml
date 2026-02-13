@@ -1,11 +1,13 @@
 [phases.setup]
-nixPkgs = ['tesseract']
+nixPkgs = ['tesseract', 'python39', 'python39Packages.pip']
 
 [phases.install]
 cmds = ['npm ci']
 
 [phases.build]
-cmds = ['pip3 install opencv-python-headless pytesseract numpy Pillow --break-system-packages || pip3 install opencv-python-headless pytesseract numpy Pillow']
+cmds = [
+  'pip3 install opencv-python-headless pytesseract numpy Pillow --no-cache-dir'
+]
 
 [start]
 cmd = 'npm start'
