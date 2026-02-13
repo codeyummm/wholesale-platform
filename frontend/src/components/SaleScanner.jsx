@@ -116,7 +116,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
 
       {error && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
-          <p style={{ color: '#dc2626', margin: 0, fontSize: '0.875rem' }}>{error/p>
+          <p style={{ color: '#dc2626', margin: 0, fontSize: '0.875rem' }}>{error}</p>
         </div>
       )}
 
