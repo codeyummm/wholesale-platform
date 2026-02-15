@@ -9,7 +9,6 @@ exports.scanLabel = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No image uploaded' });
     }
 
-    // Create form data to send to OCR service
     const formData = new FormData();
     formData.append('image', req.file.buffer, {
       filename: req.file.originalname,
@@ -18,12 +17,12 @@ exports.scanLabel = async (req, res) => {
 
     console.log(`Calling OCR service at: ${OCR_SERVICE_URL}/scan`);
 
-    // Call the OCR service
+    // Increase timeout to 60 seconds
     const ocrResponse = await fetch(`${OCR_SERVICE_URL}/scan`, {
       method: 'POST',
       body: formData,
       headers: formData.getHeaders(),
-      timeout: 30000 // 30 second timeout
+      timeout: 60000 // 60 second timeout
     });
 
     if (!ocrResponse.ok) {
@@ -31,6 +30,7 @@ exports.scanLabel = async (req, res) => {
     }
 
     const ocrData = await ocrResponse.json();
+    console.log('OCR result:', JSON.stringify(ocrData));
 
     if (ocrData.success) {
       return res.json({
@@ -44,25 +44,24 @@ exports.scanLabel = async (req, res) => {
   } catch (error) {
     console.error('OCR error:', error.message);
     
-    // Fallback to mock data if OCR service fails
+    // Fallback to mock data if OCR fails
     const mockResult = {
       device: {
         imei: "123456789012345",
-        model: "iPhone 14 Pro (OCR unavailable)",
+        model: "iPhone 14 Pro (OCR timeout)",
         storage: "256GB",
         color: "Space Black"
       },
       shipping: {
         tracking_number: "1Z999AA10123456784",
-        carrier: "UPS",
-        recipient_name: "Test Customer"
+        carrier: "UPS"
       }
     };
 
     return res.json({
       success: true,
       data: mockResult,
-      note: `OCR service unavailable: ${error.message}`
+      note: `OCR failed: ${error.message}`
     });
   }
 };
