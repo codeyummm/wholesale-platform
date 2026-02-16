@@ -1,81 +1,324 @@
 import React, { useState } from 'react';
-import { Camera, Upload, X, Check, Edit2 } from 'lucide-react';
+import { Camera, Upload, X, Check, Edit2, Package, Truck } from 'lucide-react';
 
 const SaleScanner = ({ onScanComplete, onClose }) => {
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [step, setStep] = useState('choose'); // 'choose', 'upload-shipping', 'upload-device', 'review'
+  const [shippingImage, setShippingImage] = useState(null);
+  const [deviceImage, setDeviceImage] = useState(null);
+  const [shippingPreview, setShippingPreview] = useState(null);
+  const [devicePreview, setDevicePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scannedData, setScannedData] = useState(null);
-  const [editMode, setEditMode] = useState(false);
+  const [scannedData, setScannedData] = useState({
+    device: {},
+    shipping: {}
+  });
 
-  const handleImageSelect = (e) => {
+  const handleImageSelect = (e, type) => {
     const file = e.target.files[0];
     if (file) {
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
+      if (type === 'shipping') {
+        setShippingImage(file);
+        setShippingPreview(URL.createObjectURL(file));
+      } else {
+        setDeviceImage(file);
+        setDevicePreview(URL.createObjectURL(file));
+      }
       setError('');
     }
   };
 
-  const handleScan = async () => {
-    if (!image) {
-      setError('Please select an image first');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
+  const scanImage = async (image, type) => {
     const formData = new FormData();
     formData.append('image', image);
 
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:5000/api/sales/scan-label', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || 'Scan failed');
+    }
+
+    return result.data;
+  };
+
+  const handleScanShipping = async () => {
+    if (!shippingImage) return;
+    
+    setLoading(true);
+    setError('');
+
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/sales/scan-label', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Set scanned data for review/editing
-        setScannedData({
-          device: result.data.device || {},
-          shipping: result.data.shipping || {},
-          raw_text: result.data.raw_text || ''
-        });
-        setEditMode(true);
-      } else {
-        setError(result.message || 'Scan failed');
-      }
+      const data = await scanImage(shippingImage, 'shipping');
+      setScannedData(prev => ({
+        ...prev,
+        shipping: data.shipping || {}
+      }));
+      setStep('upload-device');
     } catch (err) {
-      console.error('Scan error:', err);
-      setError('Failed to scan image. Please try again.');
+      setError('Failed to scan shipping label: ' + err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleScanDevice = async () => {
+    if (!deviceImage) return;
+    
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await scanImage(deviceImage, 'device');
+      setScannedData(prev => ({
+        device: data.device || {},
+        shipping: prev.shipping
+      }));
+      setStep('review');
+    } catch (err) {
+      setError('Failed to scan device label: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (section, field, value) => {
+    setScannedData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
   };
 
   const handleConfirm = () => {
     onScanComplete(scannedData);
   };
 
-  const handleEdit = (field, value) => {
-    setScannedData(prev => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        ...value
-      }
-    }));
-  };
+  // Choose scan type
+  if (step === 'choose') {
+    return (
+      <div style={{ padding: '24px', maxWidth: '600px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Scan Labels</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <X size={24} />
+          </button>
+        </div>
 
-  if (editMode && scannedData) {
+        <div style={{ display: 'grid', gap: '16px' }}>
+          <button
+            onClick={() => setStep('upload-shipping')}
+            style={{ 
+              padding: '32px', 
+              border: '2px solid #6366f1', 
+              borderRadius: '12px', 
+              background: '#f0f9ff', 
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px'
+            }}
+          >
+            <Truck size={48} color="#6366f1" />
+            <div style={{ fontSize: '18px', fontWeight: '600', color: '#1e3a8a' }}>Scan Shipping Label First</div>
+            <div style={{ fontSize: '14px', color: '#64748b' }}>UPS, USPS, FedEx labels</div>
+          </button>
+
+          <button
+            onClick={() => setStep('upload-device')}
+            style={{ 
+              padding: '32px', 
+              border: '2px solid #d1d5db', 
+              borderRadius: '12px', 
+              background: 'white', 
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px'
+            }}
+          >
+            <Package size={48} color="#9ca3af" />
+            <div style={{ fontSize: '18px', fontWeight: '600', color: '#475569' }}>Skip to Device Label</div>
+            <div style={{ fontSize: '14px', color: '#64748b' }}>IMEI sticker only</div>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Upload shipping label
+  if (step === 'upload-shipping') {
+    return (
+      <div style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>
+            <Truck size={24} style={{ display: 'inline', marginRight: '8px' }} />
+            Scan Shipping Label
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <X size={24} />
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
+            {error}
+          </div>
+        )}
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleImageSelect(e, 'shipping')}
+          style={{ display: 'none' }}
+          id="shipping-upload"
+        />
+        <label
+          htmlFor="shipping-upload"
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '48px', 
+            border: '2px dashed #d1d5db', 
+            borderRadius: '8px', 
+            cursor: 'pointer', 
+            background: '#f9fafb',
+            marginBottom: '16px'
+          }}
+        >
+          <Upload size={48} style={{ color: '#9ca3af', marginBottom: '12px' }} />
+          <span style={{ color: '#6b7280' }}>Upload Shipping Label</span>
+        </label>
+
+        {shippingPreview && (
+          <div style={{ marginBottom: '16px' }}>
+            <img src={shippingPreview} alt="Shipping label" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setStep('choose')}
+            style={{ flex: 1, padding: '12px', background: '#e5e7eb', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
+          >
+            Back
+          </button>
+          <button
+            onClick={handleScanShipping}
+            disabled={!shippingImage || loading}
+            style={{ 
+              flex: 2, 
+              padding: '12px', 
+              background: loading || !shippingImage ? '#d1d5db' : '#6366f1', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: loading || !shippingImage ? 'not-allowed' : 'pointer', 
+              fontWeight: '500' 
+            }}
+          >
+            {loading ? 'Scanning...' : 'Scan & Continue to Device'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Upload device label
+  if (step === 'upload-device') {
+    return (
+      <div style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>
+            <Package size={24} style={{ display: 'inline', marginRight: '8px' }} />
+            Scan Device IMEI Label
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <X size={24} />
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
+            {error}
+          </div>
+        )}
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleImageSelect(e, 'device')}
+          style={{ display: 'none' }}
+          id="device-upload"
+        />
+        <label
+          htmlFor="device-upload"
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '48px', 
+            border: '2px dashed #d1d5db', 
+            borderRadius: '8px', 
+            cursor: 'pointer', 
+            background: '#f9fafb',
+            marginBottom: '16px'
+          }}
+        >
+          <Upload size={48} style={{ color: '#9ca3af', marginBottom: '12px' }} />
+          <span style={{ color: '#6b7280' }}>Upload Device IMEI Sticker</span>
+        </label>
+
+        {devicePreview && (
+          <div style={{ marginBottom: '16px' }}>
+            <img src={devicePreview} alt="Device label" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setStep('upload-shipping')}
+            style={{ flex: 1, padding: '12px', background: '#e5e7eb', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
+          >
+            Back
+          </button>
+          <button
+            onClick={handleScanDevice}
+            disabled={!deviceImage || loading}
+            style={{ 
+              flex: 2, 
+              padding: '12px', 
+              background: loading || !deviceImage ? '#d1d5db' : '#6366f1', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: loading || !deviceImage ? 'not-allowed' : 'pointer', 
+              fontWeight: '500' 
+            }}
+          >
+            {loading ? 'Scanning...' : 'Scan & Review'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Review combined data
+  if (step === 'review') {
     return (
       <div style={{ padding: '24px', maxWidth: '800px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -89,7 +332,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
           {/* Device Information */}
           <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '8px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Edit2 size={16} /> Device Information
+              <Package size={16} /> Device Information
             </h3>
             <div style={{ display: 'grid', gap: '12px' }}>
               <div>
@@ -97,8 +340,9 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
                 <input
                   type="text"
                   value={scannedData.device.imei || ''}
-                  onChange={(e) => handleEdit('device', { imei: e.target.value })}
+                  onChange={(e) => handleEdit('device', 'imei', e.target.value)}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  placeholder="Enter IMEI manually if needed"
                 />
               </div>
               <div>
@@ -106,25 +350,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
                 <input
                   type="text"
                   value={scannedData.device.model || ''}
-                  onChange={(e) => handleEdit('device', { model: e.target.value })}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Storage</label>
-                <input
-                  type="text"
-                  value={scannedData.device.storage || ''}
-                  onChange={(e) => handleEdit('device', { storage: e.target.value })}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Color</label>
-                <input
-                  type="text"
-                  value={scannedData.device.color || ''}
-                  onChange={(e) => handleEdit('device', { color: e.target.value })}
+                  onChange={(e) => handleEdit('device', 'model', e.target.value)}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
                 />
               </div>
@@ -134,33 +360,35 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
           {/* Shipping Information */}
           <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '8px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Edit2 size={16} /> Shipping Information
+              <Truck size={16} /> Shipping Information
             </h3>
             <div style={{ display: 'grid', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Tracking Number</label>
-                <input
-                  type="text"
-                  value={scannedData.shipping.tracking_number || ''}
-                  onChange={(e) => handleEdit('shipping', { tracking_number: e.target.value })}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Carrier</label>
-                <input
-                  type="text"
-                  value={scannedData.shipping.carrier || ''}
-                  onChange={(e) => handleEdit('shipping', { carrier: e.target.value })}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Tracking Number</label>
+                  <input
+                    type="text"
+                    value={scannedData.shipping.tracking_number || ''}
+                    onChange={(e) => handleEdit('shipping', 'tracking_number', e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Carrier</label>
+                  <input
+                    type="text"
+                    value={scannedData.shipping.carrier || ''}
+                    onChange={(e) => handleEdit('shipping', 'carrier', e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Recipient Name</label>
                 <input
                   type="text"
                   value={scannedData.shipping.recipient_name || ''}
-                  onChange={(e) => handleEdit('shipping', { recipient_name: e.target.value })}
+                  onChange={(e) => handleEdit('shipping', 'recipient_name', e.target.value)}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
                 />
               </div>
@@ -169,7 +397,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
                 <input
                   type="text"
                   value={scannedData.shipping.street_address || ''}
-                  onChange={(e) => handleEdit('shipping', { street_address: e.target.value })}
+                  onChange={(e) => handleEdit('shipping', 'street_address', e.target.value)}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
                 />
               </div>
@@ -179,7 +407,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
                   <input
                     type="text"
                     value={scannedData.shipping.city || ''}
-                    onChange={(e) => handleEdit('shipping', { city: e.target.value })}
+                    onChange={(e) => handleEdit('shipping', 'city', e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
                   />
                 </div>
@@ -188,7 +416,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
                   <input
                     type="text"
                     value={scannedData.shipping.state || ''}
-                    onChange={(e) => handleEdit('shipping', { state: e.target.value })}
+                    onChange={(e) => handleEdit('shipping', 'state', e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
                   />
                 </div>
@@ -197,7 +425,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
                   <input
                     type="text"
                     value={scannedData.shipping.zip || ''}
-                    onChange={(e) => handleEdit('shipping', { zip: e.target.value })}
+                    onChange={(e) => handleEdit('shipping', 'zip', e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
                   />
                 </div>
@@ -208,10 +436,10 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <button
-              onClick={() => setEditMode(false)}
+              onClick={() => setStep('choose')}
               style={{ padding: '10px 20px', background: '#e5e7eb', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
             >
-              Scan Another
+              Start Over
             </button>
             <button
               onClick={handleConfirm}
@@ -225,58 +453,7 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
     );
   }
 
-  return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Scan Device Label</h2>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-          <X size={24} />
-        </button>
-      </div>
-
-      {error && (
-        <div style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
-          {error}
-        </div>
-      )}
-
-      <div style={{ marginBottom: '24px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-          Upload Device Label Image
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageSelect}
-          style={{ display: 'none' }}
-          id="image-upload"
-        />
-        <label
-          htmlFor="image-upload"
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px', border: '2px dashed #d1d5db', borderRadius: '8px', cursor: 'pointer', background: '#f9fafb' }}
-        >
-          <Upload size={48} style={{ color: '#9ca3af', marginBottom: '12px' }} />
-          <span style={{ color: '#6b7280' }}>Click to upload or drag and drop</span>
-          <span style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>PNG, JPG, JPEG up to 10MB</span>
-        </label>
-      </div>
-
-      {preview && (
-        <div style={{ marginBottom: '24px' }}>
-          <img src={preview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
-        </div>
-      )}
-
-      <button
-        onClick={handleScan}
-        disabled={!image || loading}
-        style={{ width: '100%', padding: '12px', background: loading || !image ? '#d1d5db' : '#6366f1', color: 'white', border: 'none', borderRadius: '8px', cursor: loading || !image ? 'not-allowed' : 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-      >
-        <Camera size={20} />
-        {loading ? 'Scanning...' : 'Scan Label'}
-      </button>
-    </div>
-  );
+  return null;
 };
 
 export default SaleScanner;
