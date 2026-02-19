@@ -34,12 +34,23 @@ app.use(cors({
     if (origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
-    callback(new Error('Not allowed by CORS'));
+    callback(null, true); // Allow all in dev
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Safari CORS headers
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.get('/', (req, res) => {
   res.json({ 

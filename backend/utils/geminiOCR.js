@@ -32,6 +32,8 @@ Return ONLY valid JSON:
         }
       };
 
+      console.log('📸 Processing image:', mimeType, 'Size:', imageBuffer.length, 'bytes');
+
       const result = await this.model.generateContent([prompt, imagePart]);
       const response = await result.response;
       const text = response.text();
@@ -64,7 +66,8 @@ Return ONLY valid JSON:
         }
       };
     } catch (error) {
-      console.error('Gemini OCR Error:', error);
+      console.error('❌ Gemini OCR Error:', error.message);
+      console.error('Full error:', error);
       throw error;
     }
   }
