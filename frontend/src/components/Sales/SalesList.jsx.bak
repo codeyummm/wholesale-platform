@@ -176,10 +176,6 @@ export default function SalesList() {
         // Add to sale items
         const newItem = {
           inventoryId: matchedInventory._id,
-          model: matchedInventory.model,
-          brand: matchedInventory.brand || "",
-          storage: matchedInventory.specifications?.storage || "",
-          color: matchedInventory.specifications?.color || "",
           imei: matchedDevice.imei,
           description: `${matchedInventory.brand} ${matchedInventory.model} ${matchedInventory.specifications?.storage || ''} ${matchedInventory.specifications?.color || ''}`.trim(),
           costPrice: matchedInventory.price?.cost || 0,
