@@ -12,24 +12,24 @@ function detectCarrier(tracking) {
   if (!tracking) return '';
   const t = tracking.replace(/\s/g, '').toUpperCase();
   // USPS
-  if (/^(94|93|92|94|95)\d{20,22}$/.test(t)) return 'usps';
-  if (/^[A-Z]{2}\d{9}US$/.test(t)) return 'usps';
-  if (/^(420)\d{5,}/.test(t)) return 'usps';
-  if (/^(82|70)\d{8,}/.test(t)) return 'usps';
+  if (/^(94|93|92|94|95)\d{20,22}$/.test(t)) return 'USPS';
+  if (/^[A-Z]{2}\d{9}US$/.test(t)) return 'USPS';
+  if (/^(420)\d{5,}/.test(t)) return 'USPS';
+  if (/^(82|70)\d{8,}/.test(t)) return 'USPS';
   // UPS
-  if (/^1Z[A-Z0-9]{16}$/.test(t)) return 'ups';
-  if (/^(T|K|J)\d{10}$/.test(t)) return 'ups';
+  if (/^1Z[A-Z0-9]{16}$/.test(t)) return 'UPS';
+  if (/^(T|K|J)\d{10}$/.test(t)) return 'UPS';
   // FedEx
-  if (/^\d{12,15}$/.test(t) && t.length >= 12 && t.length <= 15) return 'fedex';
-  if (/^\d{20,22}$/.test(t)) return 'fedex';
-  if (/^(96\d{20}|61\d{18})$/.test(t)) return 'fedex';
+  if (/^\d{12,15}$/.test(t) && t.length >= 12 && t.length <= 15) return 'FedEx';
+  if (/^\d{20,22}$/.test(t)) return 'FedEx';
+  if (/^(96\d{20}|61\d{18})$/.test(t)) return 'FedEx';
   // DHL
-  if (/^\d{10,11}$/.test(t)) return 'dhl';
-  if (/^[A-Z]{3}\d{7,}/.test(t)) return 'dhl';
+  if (/^\d{10,11}$/.test(t)) return 'DHL';
+  if (/^[A-Z]{3}\d{7,}/.test(t)) return 'DHL';
   // Amazon
-  if (/^TBA\d{10,}/.test(t)) return 'amazon';
+  if (/^TBA\d{10,}/.test(t)) return 'Amazon';
   // OnTrac
-  if (/^(C|D)\d{14}$/.test(t)) return 'ontrac';
+  if (/^(C|D)\d{14}$/.test(t)) return 'OnTrac';
   return '';
 }
 
