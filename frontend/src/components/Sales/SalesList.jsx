@@ -293,7 +293,7 @@ export default function SalesList() {
     if (saleForm.items.length === 0) { alert('Add at least one item'); return; }
     try {
       const payload = { ...saleForm, amountPaid: getTotal() };
-      if (!showShipping) { payload.shipping = {}; }
+      if (!showShipping) { payload.shipping = { shippingCost: saleForm.shipping?.shippingCost || 0 }; }
       const res = await api.post('/sales', payload);
       if (res.data.success) {
         const isWalkIn = customers.find(c => c._id === saleForm.customerId)?.name === "Walk-in Customer";
