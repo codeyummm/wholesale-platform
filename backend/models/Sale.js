@@ -51,7 +51,7 @@ const saleSchema = new mongoose.Schema({
     trackingNumber: { type: String, trim: true },
     carrier: {
       type: String,
-      enum: ['', 'usps', 'ups', 'fedex', 'dhl', 'amazon', 'ontrac', 'lasership', 'other'],
+      enum: ['', 'UPS', 'USPS', 'FedEx', 'DHL', 'Amazon', 'OnTrac', 'LaserShip', 'Other', 'usps', 'ups', 'fedex', 'dhl', 'amazon', 'ontrac', 'lasership', 'other'],
       default: ''
     },
     shippingMethod: { type: String, trim: true },
