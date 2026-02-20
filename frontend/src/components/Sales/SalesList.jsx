@@ -12,24 +12,24 @@ function detectCarrier(tracking) {
   if (!tracking) return '';
   const t = tracking.replace(/\s/g, '').toUpperCase();
   // USPS
-  if (/^(94|93|92|94|95)\d{20,22}$/.test(t)) return 'USPS';
-  if (/^[A-Z]{2}\d{9}US$/.test(t)) return 'USPS';
-  if (/^(420)\d{5,}/.test(t)) return 'USPS';
-  if (/^(82|70)\d{8,}/.test(t)) return 'USPS';
+  if (/^(94|93|92|94|95)\d{20,22}$/.test(t)) return 'usps';
+  if (/^[A-Z]{2}\d{9}US$/.test(t)) return 'usps';
+  if (/^(420)\d{5,}/.test(t)) return 'usps';
+  if (/^(82|70)\d{8,}/.test(t)) return 'usps';
   // UPS
-  if (/^1Z[A-Z0-9]{16}$/.test(t)) return 'UPS';
-  if (/^(T|K|J)\d{10}$/.test(t)) return 'UPS';
+  if (/^1Z[A-Z0-9]{16}$/.test(t)) return 'ups';
+  if (/^(T|K|J)\d{10}$/.test(t)) return 'ups';
   // FedEx
-  if (/^\d{12,15}$/.test(t) && t.length >= 12 && t.length <= 15) return 'FedEx';
-  if (/^\d{20,22}$/.test(t)) return 'FedEx';
-  if (/^(96\d{20}|61\d{18})$/.test(t)) return 'FedEx';
+  if (/^\d{12,15}$/.test(t) && t.length >= 12 && t.length <= 15) return 'fedex';
+  if (/^\d{20,22}$/.test(t)) return 'fedex';
+  if (/^(96\d{20}|61\d{18})$/.test(t)) return 'fedex';
   // DHL
-  if (/^\d{10,11}$/.test(t)) return 'DHL';
-  if (/^[A-Z]{3}\d{7,}/.test(t)) return 'DHL';
+  if (/^\d{10,11}$/.test(t)) return 'dhl';
+  if (/^[A-Z]{3}\d{7,}/.test(t)) return 'dhl';
   // Amazon
-  if (/^TBA\d{10,}/.test(t)) return 'Amazon';
+  if (/^TBA\d{10,}/.test(t)) return 'amazon';
   // OnTrac
-  if (/^(C|D)\d{14}$/.test(t)) return 'OnTrac';
+  if (/^(C|D)\d{14}$/.test(t)) return 'ontrac';
   return '';
 }
 
@@ -44,7 +44,7 @@ function getCarrierTrackingUrl(carrier, tracking) {
   return urls[carrier] || '';
 }
 
-const carrierLabels = { 'UPS': 'UPS', 'USPS': 'USPS', 'FedEx': 'FedEx', 'DHL': 'DHL', 'Amazon': 'Amazon', 'OnTrac': 'OnTrac', 'LaserShip': 'LaserShip', 'Other': 'Other' };
+const carrierLabels = { 'ups': 'UPS', 'usps': 'USPS', 'fedex': 'FedEx', 'dhl': 'DHL', 'amazon': 'Amazon', 'ontrac': 'OnTrac', 'lasership': 'LaserShip', 'other': 'Other' };
 const carrierColors = { usps: '#004B87', ups: '#351C15', fedex: '#4D148C', dhl: '#FFCC00', amazon: '#FF9900', ontrac: '#0072CE', lasership: '#00AA4F', other: '#64748b' };
 
 const channelLabels = { in_store: 'In-Store', online: 'Online', wholesale: 'Wholesale', marketplace: 'Marketplace', phone: 'Phone Order', other: 'Other' };
