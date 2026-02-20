@@ -28,7 +28,7 @@ exports.scanLabel = async (req, res) => {
         },
         shipping: {
           tracking_number: result.data.tracking_number,
-          carrier: result.data.carrier,
+          carrier: result.data.carrier ? result.data.carrier.toLowerCase() : null,
           recipient_name: result.data.recipient,
           street_address: result.data.address,
           city: result.data.city,

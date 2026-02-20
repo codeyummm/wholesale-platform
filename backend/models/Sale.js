@@ -97,4 +97,4 @@ saleSchema.index({ createdAt: -1 });
 saleSchema.index({ customerName: 'text', saleNumber: 'text' });
 saleSchema.index({ 'shipping.trackingNumber': 1 });
 
-module.exports = mongoose.model('Sale', saleSchema);
+module.exports = mongoose.models.Sale || mongoose.model('Sale', saleSchema);
