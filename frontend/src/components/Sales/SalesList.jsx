@@ -274,8 +274,20 @@ export default function SalesList() {
   };
 
   const getSubtotal = () => saleForm.items.reduce((sum, item) => sum + item.salePrice, 0);
-  const getTotal = () => getSubtotal() - saleForm.discount + saleForm.tax;
-  const getTotalProfit = () => saleForm.items.reduce((sum, item) => sum + item.profit, 0);
+  const getTotal = () => {
+    const shippingCost = parseFloat(saleForm.shipping?.shippingCost) || 0;
+    return getSubtotal() - saleForm.discount + saleForm.tax + shippingCost;
+  };
+  const getTotalProfit = () => {
+    const itemProfits = saleForm.items.reduce((sum, item) => sum + item.profit, 0);
+    const shippingCost = parseFloat(saleForm.shipping?.shippingCost) || 0;
+    const handlingCost = parseFloat(saleForm.costs?.handling) || 0;
+    const packagingCost = parseFloat(saleForm.costs?.packaging) || 0;
+    const marketplaceFees = parseFloat(saleForm.costs?.marketplaceFees) || 0;
+    const otherCosts = parseFloat(saleForm.costs?.other) || 0;
+    const totalCosts = shippingCost + handlingCost + packagingCost + marketplaceFees + otherCosts;
+    return itemProfits - totalCosts;
+  };
 
   const handleCreateSale = async () => {
     if (saleForm.items.length === 0) { alert('Add at least one item'); return; }
