@@ -817,6 +817,9 @@ export default function SalesList() {
             {/* Financials */}
             <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div><span style={{ fontSize: '12px', color: '#64748b' }}>Subtotal</span><div style={{ fontWeight: '600' }}>${selectedSale.subtotal?.toFixed(2)}</div></div>
+              {selectedSale.shipping?.shippingCost > 0 && (
+                <div><span style={{ fontSize: '12px', color: '#64748b' }}>Shipping</span><div style={{ fontWeight: '600' }}>${selectedSale.shipping.shippingCost?.toFixed(2)}</div></div>
+              )}
               <div><span style={{ fontSize: '12px', color: '#64748b' }}>Discount</span><div style={{ fontWeight: '600' }}>-${selectedSale.discount?.toFixed(2)}</div></div>
               <div><span style={{ fontSize: '12px', color: '#64748b' }}>Total</span><div style={{ fontSize: '18px', fontWeight: '700' }}>${selectedSale.totalAmount?.toFixed(2)}</div></div>
               <div><span style={{ fontSize: '12px', color: '#64748b' }}>Profit</span><div style={{ fontSize: '18px', fontWeight: '700', color: '#059669' }}>${selectedSale.totalProfit?.toFixed(2)}</div></div>
