@@ -1,4 +1,4 @@
-const Sale = require('../models/sale');
+const Sale = require('../models/Sale');
 
 // Get profit/loss summary
 exports.getProfitLossSummary = async (req, res) => {
