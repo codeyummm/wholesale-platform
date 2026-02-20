@@ -296,18 +296,7 @@ export default function SalesList() {
       if (!showShipping) { payload.shipping = {}; }
       const res = await api.post('/sales', payload);
       if (res.data.success) {
-        const isWalkIn = customers.find(c => c._id === saleForm.customerId)?.name === "Walk-in Customer";
-        if (isWalkIn && saleForm.shipping?.address?.name) {
-          const save = window.confirm(`Save "${saleForm.shipping.address.name}" as new customer?`);
-          if (save) {
-            try {
-              await api.post("/customers", { name: saleForm.shipping.address.name, phone: saleForm.shipping.address.phone || "", address: { street: saleForm.shipping.address.street, city: saleForm.shipping.address.city, state: saleForm.shipping.address.state, zipCode: saleForm.shipping.address.zipCode } });
-              fetchCustomers();
-            } catch (err) { console.error(err); }
-          }
-        }
         setShowCreateModal(false); fetchSales(); fetchStats();
-        alert("Sale created successfully!");
         alert('Sale created successfully!');
       }
     } catch (err) {
@@ -702,11 +691,6 @@ export default function SalesList() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
                   <span style={{ color: '#64748b' }}>Subtotal</span><span style={{ fontWeight: '500' }}>${getSubtotal().toFixed(2)}</span>
                 </div>
-                {parseFloat(saleForm.shipping?.shippingCost) > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
-                    <span style={{ color: '#64748b' }}>Shipping</span><span style={{ fontWeight: '500' }}>${parseFloat(saleForm.shipping.shippingCost).toFixed(2)}</span>
-                  </div>
-                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', alignItems: 'center' }}>
                   <span style={{ color: '#64748b' }}>Discount</span>
                   <input type="number" step="0.01" value={saleForm.discount} onChange={(e) => setSaleForm(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
