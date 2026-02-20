@@ -53,7 +53,7 @@ Return ONLY valid JSON:
         success: true,
         data: {
           tracking_number: data.tracking_number,
-          carrier: data.carrier,
+          carrier: data.carrier ? data.carrier.toLowerCase() : null,
           recipient: data.recipient_name,
           address: data.street_address,
           city: data.city,

@@ -77,6 +77,7 @@ app.use('/api/invoices', require('./routes/invoice'));
 app.use('/api/device-tests', require('./routes/deviceTest'));
 app.use('/api/customers', require('./routes/customer'));
 app.use('/api/sales', require('./routes/sale'));
+app.use('/api/profit-loss', require('./routes/profitLoss'));
 app.use('/api/sale-scanner', require('./routes/saleScanner'));
 app.use('/api/imei', require('./routes/imeiLookup'));
 app.use('/api/reports', require('./routes/reports'));

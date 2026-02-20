@@ -44,7 +44,7 @@ function getCarrierTrackingUrl(carrier, tracking) {
   return urls[carrier] || '';
 }
 
-const carrierLabels = { usps: 'USPS', ups: 'UPS', fedex: 'FedEx', dhl: 'DHL', amazon: 'Amazon', ontrac: 'OnTrac', lasership: 'LaserShip', other: 'Other' };
+const carrierLabels = { 'UPS': 'UPS', 'USPS': 'USPS', 'FedEx': 'FedEx', 'DHL': 'DHL', 'Amazon': 'Amazon', 'OnTrac': 'OnTrac', 'LaserShip': 'LaserShip', 'Other': 'Other' };
 const carrierColors = { usps: '#004B87', ups: '#351C15', fedex: '#4D148C', dhl: '#FFCC00', amazon: '#FF9900', ontrac: '#0072CE', lasership: '#00AA4F', other: '#64748b' };
 
 const channelLabels = { in_store: 'In-Store', online: 'Online', wholesale: 'Wholesale', marketplace: 'Marketplace', phone: 'Phone Order', other: 'Other' };
@@ -201,12 +201,24 @@ export default function SalesList() {
     // Process shipping info if available
     if (scanResult.shipping) {
       const shipping = scanResult.shipping;
+      
+      // Auto-detect carrier from tracking number
+      let detectedCarrier = shipping.carrier || '';
+      if (shipping.tracking_number && !detectedCarrier) {
+        const cleaned = shipping.tracking_number.replace(/\s+/g, '').toUpperCase();
+        if (/^1Z[A-Z0-9]{16}$/i.test(cleaned)) detectedCarrier = 'ups';
+        else if (/^(94|93|92|95|82)\d{20,22}$/.test(cleaned)) detectedCarrier = 'usps';
+        else if (/^\d{12,14}$/.test(cleaned)) detectedCarrier = 'fedex';
+        else if (/^\d{10,11}$/.test(cleaned)) detectedCarrier = 'dhl';
+      }
+      
+      console.log('Setting carrier to:', detectedCarrier);
       setSaleForm(prev => ({
         ...prev,
         shipping: {
           ...prev.shipping,
           trackingNumber: shipping.tracking_number || prev.shipping.trackingNumber,
-          carrier: shipping.carrier || prev.shipping.carrier,
+          carrier: detectedCarrier || prev.shipping.carrier,
           address: {
             ...prev.shipping.address,
             name: shipping.recipient_name || prev.shipping.address.name,
