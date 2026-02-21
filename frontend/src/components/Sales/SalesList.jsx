@@ -302,7 +302,8 @@ export default function SalesList() {
           if (save) {
             try {
               await api.post("/customers", { name: saleForm.shipping.address.name, phone: saleForm.shipping.address.phone || "", address: { street: saleForm.shipping.address.street, city: saleForm.shipping.address.city, state: saleForm.shipping.address.state, zipCode: saleForm.shipping.address.zipCode } });
-              fetchCustomers();
+              const custRes = await api.get('/customers');
+              setCustomers(custRes.data.data || []);
             } catch (err) { console.error(err); }
           }
         }
