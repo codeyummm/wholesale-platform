@@ -305,10 +305,14 @@ export default function SalesList() {
           const save = window.confirm(`Save "${saleForm.shipping.address.name}" as new customer?`);
           if (save) {
             try {
-              await api.post("/customers", { name: saleForm.shipping.address.name, phone: saleForm.shipping.address.phone || "", address: { street: saleForm.shipping.address.street, city: saleForm.shipping.address.city, state: saleForm.shipping.address.state, zipCode: saleForm.shipping.address.zipCode } });
+              await api.post("/customers", { name: saleForm.shipping.address.name, contact: { phone: saleForm.shipping.address.phone || "N/A" }, address: { street: saleForm.shipping.address.street, city: saleForm.shipping.address.city, state: saleForm.shipping.address.state, zipCode: saleForm.shipping.address.zipCode } });
               const custRes = await api.get('/customers');
               setCustomers(custRes.data.data || []);
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+              console.error('❌ Customer save error:', err);
+              console.error('❌ Error response:', err.response?.data);
+              console.error('❌ Error status:', err.response?.status);
+            }
           }
         }
         setShowCreateModal(false); fetchSales(); fetchStats();
