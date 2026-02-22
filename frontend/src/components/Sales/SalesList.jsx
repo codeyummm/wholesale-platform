@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import SaleScanner from '../SaleScanner';
 import {
@@ -126,8 +127,11 @@ export default function SalesList() {
       setSaleForm({
         customerId: selectedCustomer?._id || '', 
         customerName: selectedCustomer?.name || 'Walk-in Customer',
+        items: [], discount: 0, tax: 0,
+        paymentMethod: 'cash', paymentStatus: 'paid', notes: '',
+        salesChannel: 'in_store',
         shipping: selectedCustomer ? {
-          ...saleForm.shipping,
+          trackingNumber: '', carrier: '', shippingMethod: '', shippingCost: 0,
           address: {
             name: selectedCustomer.name || '',
             street: selectedCustomer.address?.street || '',
@@ -137,15 +141,13 @@ export default function SalesList() {
             country: 'USA',
             phone: selectedCustomer.contact?.phone || ''
           }
-        } : saleForm.shipping,
-      items: [], discount: 0, tax: 0,
-      paymentMethod: 'cash', paymentStatus: 'paid', notes: '',
-      salesChannel: 'in_store',
-      shipping: {
-        trackingNumber: '', carrier: '', shippingMethod: '', shippingCost: 0,
-        address: { name: '', street: '', city: '', state: '', zipCode: '', country: 'USA', phone: '' }
-      }
-    });
+        } : {
+          trackingNumber: '', carrier: '', shippingMethod: '', shippingCost: 0,
+          address: { name: '', street: '', city: '', state: '', zipCode: '', country: 'USA', phone: '' }
+        },
+        costs: { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 },
+        tax: { amount: 0, rate: 0, collectedBy: 'Not Applicable' }
+      });
     setShowShipping(false);
     setShowCreateModal(true);
   };
