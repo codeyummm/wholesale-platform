@@ -162,6 +162,23 @@ exports.updateSale = async (req, res) => {
   try {
     const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
+    
+    // If customer is being added, update their purchase history
+    if (req.body.customer && req.body.customer !== sale.customer) {
+      const totalAmount = sale.items.reduce((sum, item) => sum + item.salePrice, 0) - (sale.discount || 0) + (sale.tax || 0);
+      await Customer.findByIdAndUpdate(req.body.customer, {
+        $inc: { totalPurchases: 1, totalSpent: totalAmount },
+        $push: {
+          purchaseHistory: {
+            saleId: sale._id,
+            date: sale.createdAt,
+            amount: totalAmount,
+            items: sale.items.map(item => ({ model: item.model, imei: item.imei }))
+          }
+        }
+      });
+    }
+    
     res.json({ success: true, data: sale });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
