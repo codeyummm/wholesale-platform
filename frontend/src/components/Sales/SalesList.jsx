@@ -115,9 +115,29 @@ export default function SalesList() {
       ]);
       setCustomers(custRes.data.data || []);
       setInventory(invRes.data.data || []);
-    } catch (err) { console.error(err); }
-    setSaleForm({
-      customerId: '', customerName: 'Walk-in Customer',
+      
+      // Pre-populate customer if customerId in URL
+      const urlCustomerId = searchParams.get('customerId');
+      let selectedCustomer = null;
+      if (urlCustomerId) {
+        selectedCustomer = (custRes.data.data || []).find(c => c._id === urlCustomerId);
+      }
+      
+      setSaleForm({
+        customerId: selectedCustomer?._id || '', 
+        customerName: selectedCustomer?.name || 'Walk-in Customer',
+        shipping: selectedCustomer ? {
+          ...saleForm.shipping,
+          address: {
+            name: selectedCustomer.name || '',
+            street: selectedCustomer.address?.street || '',
+            city: selectedCustomer.address?.city || '',
+            state: selectedCustomer.address?.state || '',
+            zipCode: selectedCustomer.address?.zipCode || '',
+            country: 'USA',
+            phone: selectedCustomer.contact?.phone || ''
+          }
+        } : saleForm.shipping,
       items: [], discount: 0, tax: 0,
       paymentMethod: 'cash', paymentStatus: 'paid', notes: '',
       salesChannel: 'in_store',
