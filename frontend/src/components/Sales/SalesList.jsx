@@ -150,6 +150,7 @@ export default function SalesList() {
       });
     setShowShipping(false);
     setShowCreateModal(true);
+    } catch (err) { console.error(err); }
   };
 
   const handleCustomerSelect = (e) => {
