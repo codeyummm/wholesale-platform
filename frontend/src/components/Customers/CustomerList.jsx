@@ -16,6 +16,8 @@ export default function CustomerList() {
   const [editingId, setEditingId] = useState(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [customerSales, setCustomerSales] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [formData, setFormData] = useState({
     name: '', company: '', type: 'retail',
     contact: { email: '', phone: '', alternatePhone: '' },
@@ -38,6 +40,19 @@ export default function CustomerList() {
     }
   };
 
+
+  const fetchCustomerSales = async (customerId) => {
+    setLoadingHistory(true);
+    try {
+      const res = await api.get(`/sales?customerId=${customerId}`);
+      setCustomerSales(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch customer sales:', err);
+      setCustomerSales([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -186,7 +201,7 @@ export default function CustomerList() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => { setSelectedCustomer(cust); setShowHistoryModal(true); }}
+                  <button onClick={() => { setSelectedCustomer(cust); fetchCustomerSales(cust._id); setShowHistoryModal(true); }}
                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
                     <ShoppingCart size={14} /> View Orders
                   </button>
@@ -342,43 +357,80 @@ export default function CustomerList() {
               </div>
             </div>
 
-            {/* Purchase History */}
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Order History</h3>
-            {selectedCustomer.purchaseHistory && selectedCustomer.purchaseHistory.length > 0 ? (
-              <div style={{ maxHeight: '300px', overflow: 'auto' }}>
-                {selectedCustomer.purchaseHistory.slice().reverse().map((purchase, idx) => (
-                  <div key={idx} style={{ padding: '12px', background: '#fafafa', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            {/* Sales History */}
+            <h3 style={{ fontSize: '16px', fontight: '600', marginBottom: '12px' }}>Sales History</h3>
+            {loadingHistory ? (
+              <div style={{ textAlign: 'center', padding: '32px' }}>
+                <div style={{ width: '32px', height: '32px', border: '3px solid #e2e8f0', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
+              </div>
+            ) : customerSales.length > 0 ? (
+              <div style={{ maxHeight: '400px', overflow: 'auto' }}>
+                {customerSales.map((sale) => (
+                  <div key={sale._id} style={{ padding: '16px', background: '#fafafa', borderRadius: '10px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
+                    {/* Sale Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
                       <div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>
-                          {new Date(purchase.date).toLocaleDateString()}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>
-                          {purchase.items?.length || 0} item(s)
-                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{sale.saleNumber}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>{new Date(sale.createdAt).toLocaleString()}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#10b981' }}>
-                          ${purchase.amount?.toFixed(2) || '0.00'}
-                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>${sale.totalAmount?.toFixed(2)}</div>
+                        <div style={{ fontSize: '12px', color: '#059669' }}>+${sale.totalProfit?.toFixed(2)} profit</div>
                       </div>
                     </div>
-                    {purchase.items && purchase.items.length > 0 && (
-                      <div style={{ fontSize: '12px', color: '#64748b', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
-                        {purchase.items.map((item, i) => (
-                          <div key={i} style={{ marginBottom: '2px' }}>
-                            • {item.model} {item.imei ? `(${item.imei})` : ''}
+                    
+                    {/* Items */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px' }}>Items ({sale.items?.length || 0})</div>
+                      {sale.items?.map((item, idx) => (
+                        <div key={idx} style={{ fontSize: '13px', padding: '6px 0', borderBottom: '1px dashed #e2e8f0' }}>
+                          <div style={{ fontWeight: '500', color: '#0f172a' }}>{item.brand} {item.model}</div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>{item.imei} · {item.storage} {item.color}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '2px' }}>
+                            <span style={{ color: '#64748b' }}>Sale Price</span>
+                            <span style={{ fontWeight: '600', color: '#0f172a' }}>${item.salePrice?.toFixed(2)}</span>
                           </div>
-                        ))}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Shipping */}
+                    {sale.shipping?.trackingNumber && (
+                      <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '10px' }}>
+                        <div style={{ fontWeight: '600', color: '#0f172a', marginBottom: '4px'}}>Shipping</div>
+                        <div style={{ color: '#64748b' }}>{sale.shipping.carrier} · {sale.shipping.trackingNumber}</div>
+                        {sale.shipping.address?.name && (
+                          <div style={{ color: '#64748b', marginTop: '2px' }}>
+                            {sale.shipping.address.name}<br />
+                            {sale.shipping.address.street}<br />
+                            {sale.shipping.address.city}, {sale.shipping.address.state} {sale.shipping.address.zipCode}
+                          </div>
+                        )}
                       </div>
                     )}
+                    
+                    {/* Financial Summary */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '11px' }}>
+                      <div>
+                        <div style={{ color: '#64748b' }}>Channel</div>
+                        <div style={{ fontWeight: '600', color: '#0f172a' }}>{sale.salesChannel?.rplace('_', ' ')}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#64748b' }}>Payment</div>
+                        <div style={{ fontWeight: '600', color: '#0f172a' }}>{sale.paymentMethod}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#64748b' }}>Status</div>
+                        <div style={{ fontWeight: '600', color: '#10b981' }}>{sale.status}</div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={textAlign: 'center', padding: '32px', background: '#f8fafc', borderRadius: '8px' }}>
+              <div style={{ textAlign: 'center', padding: '32px', background: '#f8fafc', borderRadius: '8px' }}>
                 <ShoppingCart size={32} color="#cbd5e1" style={{ margin: '0 auto 8px' }} />
-                <p style={{ color: '#64748b', fontSize: '14px' }}>No purchase history yet</p>
+                <p style={{ color: '#64748b', fontSize: '14px' }}>No sales yet</p>
               </div>
             )}
 
