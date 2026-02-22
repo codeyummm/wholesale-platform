@@ -305,7 +305,11 @@ export default function SalesList() {
           const save = window.confirm(`Save "${saleForm.shipping.address.name}" as new customer?`);
           if (save) {
             try {
-              await api.post("/customers", { name: saleForm.shipping.address.name, contact: { phone: saleForm.shipping.address.phone || "N/A" }, address: { street: saleForm.shipping.address.street, city: saleForm.shipping.address.city, state: saleForm.shipping.address.state, zipCode: saleForm.shipping.address.zipCode } });
+              const custResponse = await api.post("/customers", { name: saleForm.shipping.address.name, contact: { phone: saleForm.shipping.address.phone || "N/A" }, address: { street: saleForm.shipping.address.street, city: saleForm.shipping.address.city, state: saleForm.shipping.address.state, zipCode: saleForm.shipping.address.zipCode } });
+              // Link the sale to the new customer
+              if (custResponse.data.success && res.data.data._id) {
+                await api.put(`/sales/${res.data.data._id}`, { customer: custResponse.data.data._id });
+              }
               const custRes = await api.get('/customers');
               setCustomers(custRes.data.data || []);
             } catch (err) { 
