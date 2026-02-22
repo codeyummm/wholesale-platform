@@ -2,6 +2,37 @@ const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
 const Customer = require('../models/Customer');
 
+
+// Update sale customer and add to purchase history
+exports.updateSaleCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customer } = req.body;
+    
+    const sale = await Sale.findByIdAndUpdate(id, { customer }, { new: true });
+    
+    if (customer && sale) {
+      // Add to customer purchase history
+      const totalAmount = sale.items.reduce((sum, item) => sum + item.salePrice, 0) - (sale.discount || 0) + (sale.tax || 0);
+      await Customer.findByIdAndUpdate(customer, {
+        $inc: { totalPurchases: 1, totalSpent: totalAmount },
+        $push: {
+          purchaseHistory: {
+            saleId: sale._id,
+            date: sale.createdAt,
+            amount: totalAmount,
+            items: sale.items.map(item => ({ model: item.model, imei: item.imei }))
+          }
+        }
+      });
+    }
+    
+    res.json({ success: true, data: sale });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.getSales = async (req, res) => {
   try {
     const { page = 1, limit = 20, search, status, startDate, endDate } = req.query;
