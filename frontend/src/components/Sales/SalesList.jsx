@@ -293,10 +293,14 @@ export default function SalesList() {
     if (saleForm.items.length === 0) { alert('Add at least one item'); return; }
     try {
       const payload = { ...saleForm, amountPaid: getTotal() };
+      console.log('📤 customerId:', saleForm.customerId);
       if (!showShipping) { payload.shipping = { shippingCost: saleForm.shipping?.shippingCost || 0 }; }
       const res = await api.post('/sales', payload);
+      console.log("🔍 Backend response:", res.data);
+      console.log("🔍 res.data.success:", res.data.success);
       if (res.data.success) {
-        const isWalkIn = customers.find(c => c._id === saleForm.customerId)?.name === "Walk-in Customer";
+        console.log("✅ Sale created, res.data:", res.data);
+        const isWalkIn = saleForm.customerName === "Walk-in Customer";
         if (isWalkIn && saleForm.shipping?.address?.name) {
           const save = window.confirm(`Save "${saleForm.shipping.address.name}" as new customer?`);
           if (save) {
