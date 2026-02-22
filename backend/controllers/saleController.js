@@ -85,11 +85,21 @@ exports.createSale = async (req, res) => {
       processedItems.push(processedItem);
     }
 
-    // Update customer stats
+    // Update customer stats and purchase history
     if (customerId) {
       const totalAmount = processedItems.reduce((sum, item) => sum + item.salePrice, 0) - (discount || 0) + (tax || 0);
       await Customer.findByIdAndUpdate(customerId, {
-        $inc: { totalPurchases: 1, totalSpent: totalAmount }
+        $inc: { totalPurchases: 1, totalSpent: totalAmount },
+        $push: {
+          purchaseHistory: {
+            date: new Date(),
+            amount: totalAmount,
+            items: processedItems.map(item => ({
+              model: item.model,
+              imei: item.imei
+            }))
+          }
+        }
       });
     }
 
