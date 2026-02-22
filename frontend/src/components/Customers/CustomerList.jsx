@@ -14,6 +14,8 @@ export default function CustomerList() {
   const [typeFilter, setTypeFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [formData, setFormData] = useState({
     name: '', company: '', type: 'retail',
     contact: { email: '', phone: '', alternatePhone: '' },
@@ -184,9 +186,9 @@ export default function CustomerList() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => navigate(`/sales?customerId=${cust._id}`)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
-                    <ShoppingCart size={14} /> New Sale
+                  <button onClick={() => { setSelectedCustomer(cust); setShowHistoryModal(true); }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
+                    <ShoppingCart size={14} /> View Orders
                   </button>
                   <button onClick={() => handleEdit(cust)}
                     style={{ padding: '8px 12px', background: '#eef2ff', border: '1px solid #c7d2fe', color: '#4338ca', borderRadius: '6px', cursor: 'pointer' }}>
@@ -245,7 +247,12 @@ export default function CustomerList() {
                 <input type="email" value={formData.contact.email} onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, email: e.target.value } })}
                   style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>Street Address</label>
+                <input type="text" value={formData.address.street} onChange={(e) => setFormData({ ...formData, address: { ...formData.address, street: e.target.value } })}
+                  style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>City</label>
                   <input type="text" value={formData.address.city} onChange={(e) => setFormData({ ...formData, address: { ...formData.address, city: e.target.value } })}
@@ -254,6 +261,11 @@ export default function CustomerList() {
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>State</label>
                   <input type="text" value={formData.address.state} onChange={(e) => setFormData({ ...formData, address: { ...formData.address, state: e.target.value } })}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>ZIP Code</label>
+                  <input type="text" value={formData.address.zipCode} onChange={(e) => setFormData({ ...formData, address: { ...formData.address, zipCode: e.target.value } })}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
                 </div>
               </div>
@@ -271,6 +283,109 @@ export default function CustomerList() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase History Modal */}
+      {showHistoryModal && selectedCustomer && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '28px', maxWidth: '800px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '20px', fontWeight: '700', margin: '0 0 4px' }}>{selectedCustomer.name}</h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Purchase History</p>
+              </div>
+              <button onClick={() => { setShowHistoryModal(false); setSelectedCustomer(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={22} color="#64748b" />
+              </button>
+            </div>
+
+            {/* Customer Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+              <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>Total Orders</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#15803d' }}>{selectedCustomer.totalPurchases || 0}</div>
+              </div>
+              <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: '12px', color: '#2563eb', marginBottom: '4px' }}>Total Spent</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#1d4ed8' }}>${(selectedCustomer.totalSpent || 0).toLocaleString()}</div>
+              </div>
+              <div style={{ background: '#fef3c7', padding: '16px', borderRadius: '10px', border: '1px solid #fde68a' }}>
+                <div style={{ fontSize: '12px', color: '#b45309', marginBottom: '4px' }}>Avg Order</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#92400e' }}>
+                  ${selectedCustomer.totalPurchases > 0 ? ((selectedCustomer.totalSpent || 0) / selectedCustomer.totalPurchases).toFixed(0) : 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Contact & Address */}
+            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px' }}>
+                <div>
+                  <div style={{ color: '#64748b', marginBottom: '4px' }}>Phone</div>
+                  <div style={{ fontWeight: '500', color: '#0f172a' }}>{selectedCustomer.contact?.phone || 'N/A'}</div>
+                </div>
+                <div>
+                  <div style={{ color: '#64748b', marginBottom: '4px' }}>Email</div>
+                  <div style={{ fontWeight: '500', color: '#0f172a' }}>{selectedCustomer.contact?.email || 'N/A'}</div>
+                </div>
+                {selectedCustomer.address?.street && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ color: '#64748b', marginBottom: '4px' }}>Address</div>
+                    <div style={{ fontWeight: '500', color: '#0f172a' }}>
+                      {selectedCustomer.address.street}<br />
+                      {selectedCustomer.address.city}, {selectedCustomer.address.state} {selectedCustomer.address.zipCode}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Purchase History */}
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Order History</h3>
+            {selectedCustomer.purchaseHistory && selectedCustomer.purchaseHistory.length > 0 ? (
+              <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+                {selectedCustomer.purchaseHistory.slice().reverse().map((purchase, idx) => (
+                  <div key={idx} style={{ padding: '12px', background: '#fafafa', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>
+                          {new Date(purchase.date).toLocaleDateString()}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          {purchase.items?.length || 0} item(s)
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#10b981' }}>
+                          ${purchase.amount?.toFixed(2) || '0.00'}
+                        </div>
+                      </div>
+                    </div>
+                    {purchase.items && purchase.items.length > 0 && (
+                      <div style={{ fontSize: '12px', color: '#64748b', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
+                        {purchase.items.map((item, i) => (
+                          <div key={i} style={{ marginBottom: '2px' }}>
+                            • {item.model} {item.imei ? `(${item.imei})` : ''}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={textAlign: 'center', padding: '32px', background: '#f8fafc', borderRadius: '8px' }}>
+                <ShoppingCart size={32} color="#cbd5e1" style={{ margin: '0 auto 8px' }} />
+                <p style={{ color: '#64748b', fontSize: '14px' }}>No purchase history yet</p>
+              </div>
+            )}
+
+            <button onClick={() => navigate(`/sales?customerId=${selectedCustomer._id}`)}
+              style={{ width: '100%', marginTop: '16px', padding: '12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <Plus size={18} /> Create New Sale
+            </button>
           </div>
         </div>
       )}
