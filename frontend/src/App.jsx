@@ -9,6 +9,7 @@ import SupplierList from './components/Suppliers/SupplierList';
 import InvoicesPage from './pages/InvoicesPage';
 import PhoneTestModule from './components/DeviceTest/PhoneTestModule';
 import CustomerList from './components/Customers/CustomerList';
+import CustomerOrders from './components/Customers/CustomerOrders';
 import SalesList from './components/Sales/SalesList';
 import IMEILookup from './components/IMEILookup/IMEILookup';
 import ReportsPage from './components/Reports/ReportsPage';
@@ -66,6 +67,7 @@ function App() {
           <Route path="/suppliers" element={<PrivateRoute><SupplierList /></PrivateRoute>} />
           <Route path="/invoices" element={<PrivateRoute><InvoicesPage /></PrivateRoute>} />
           <Route path="/device-test" element={<PrivateRoute><DeviceTestPage /></PrivateRoute>} />
+          <Route path="/customers/:customerId/orders" element={<PrivateRoute><CustomerOrders /></PrivateRoute>} />
           <Route path="/device-test/:imei" element={<PrivateRoute><DeviceTestWithIMEI /></PrivateRoute>} />
           <Route path="/customers" element={<PrivateRoute><CustomerList /></PrivateRoute>} />
           <Route path="/sales" element={<PrivateRoute><SalesList /></PrivateRoute>} />

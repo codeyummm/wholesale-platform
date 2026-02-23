@@ -77,12 +77,14 @@ export default function SalesList() {
     shipping: {
       trackingNumber: '', carrier: '', shippingMethod: '', shippingCost: 0,
       address: { name: '', street: '', city: '', state: '', zipCode: '', country: 'USA', phone: '' }
-    }
+    },
+    costs: { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 }
   });
   const [selectedInventory, setSelectedInventory] = useState('');
   const [selectedDevice, setSelectedDevice] = useState('');
   const [manualPrice, setManualPrice] = useState('');
   const [showShipping, setShowShipping] = useState(false);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status]);
 
