@@ -86,7 +86,15 @@ saleSchema.pre('save', async function (next) {
   // Calculate totals
   if (this.items && this.items.length > 0) {
     this.subtotal = this.items.reduce((sum, item) => sum + item.salePrice, 0);
-    this.totalProfit = this.items.reduce((sum, item) => sum + item.profit, 0);
+    // Calculate total profit deducting all costs
+    const itemProfits = this.items.reduce((sum, item) => sum + item.profit, 0);
+    const shippingCost = this.shipping?.shippingCost || 0;
+    const handlingCost = this.costs?.handling || 0;
+    const packagingCost = this.costs?.packaging || 0;
+    const marketplaceFees = this.costs?.marketplaceFees || 0;
+    const otherCosts = this.costs?.other || 0;
+    const totalCosts = shippingCost + handlingCost + packagingCost + marketplaceFees + otherCosts;
+    this.totalProfit = itemProfits - totalCosts;
     this.totalAmount = this.subtotal - this.discount + this.tax;
   }
 
