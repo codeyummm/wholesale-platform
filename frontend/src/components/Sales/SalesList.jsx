@@ -159,7 +159,6 @@ export default function SalesList() {
           address: { name: '', street: '', city: '', state: '', zipCode: '', country: 'USA', phone: '' }
         },
         costs: { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 },
-        tax: { amount: 0, rate: 0, collectedBy: 'Not Applicable' }
       });
     setShowShipping(false);
     setShowCreateModal(true);
