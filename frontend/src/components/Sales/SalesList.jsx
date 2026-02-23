@@ -61,7 +61,6 @@ export default function SalesList() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSaleScanner, setShowSaleScanner] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  useEffect(() => { if (selectedSale) console.log("📊 Selected Sale:", selectedSale); }, [selectedSale]);
   const [selectedSale, setSelectedSale] = useState(null);
   const [stats, setStats] = useState({ today: {}, thisMonth: {}, allTime: {} });
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
@@ -87,6 +86,7 @@ export default function SalesList() {
   const [showShipping, setShowShipping] = useState(false);
   const [searchParams] = useSearchParams();
   const hasAutoOpened = useRef(false);
+  useEffect(() => { if (selectedSale) console.log("📊 Selected Sale:", selectedSale); }, [selectedSale]);
 
   useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status]);
 
