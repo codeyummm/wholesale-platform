@@ -331,6 +331,7 @@ export default function SalesList() {
     if (saleForm.items.length === 0) { alert('Add at least one item'); return; }
     try {
       const payload = { ...saleForm, amountPaid: getTotal() };
+      console.log("📦 Full payload being sent:", JSON.stringify(payload, null, 2));
       console.log('📤 customerId:', saleForm.customerId);
       if (!showShipping) { payload.shipping = { shippingCost: saleForm.shipping?.shippingCost || 0 }; }
       const res = await api.post('/sales', payload);
