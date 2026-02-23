@@ -10,6 +10,7 @@ exports.updateSaleCustomer = async (req, res) => {
     const { customer } = req.body;
     
     const sale = await Sale.findByIdAndUpdate(id, { customer }, { new: true });
+    console.log("📖 Sale from DB has costs:", sale?.costs);
     
     if (customer && sale) {
       // Add to customer purchase history
@@ -73,6 +74,7 @@ exports.getSales = async (req, res) => {
 exports.getSale = async (req, res) => {
   try {
     const sale = await Sale.findById(req.params.id).populate('customer', 'name company contact address');
+    console.log("📖 Sale from DB has costs:", sale?.costs);
     if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
     res.json({ success: true, data: sale });
   } catch (error) {
@@ -134,6 +136,7 @@ exports.createSale = async (req, res) => {
       });
     }
 
+    console.log("💰 Received costs from frontend:", costs);
     const sale = await Sale.create({
       customer: customerId || null,
       customerName: customerName || 'Walk-in Customer',
@@ -162,6 +165,7 @@ exports.createSale = async (req, res) => {
 exports.updateSale = async (req, res) => {
   try {
     const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    console.log("📖 Sale from DB has costs:", sale?.costs);
     if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
     
     // If customer is being added, update their purchase history
@@ -189,6 +193,7 @@ exports.updateSale = async (req, res) => {
 exports.deleteSale = async (req, res) => {
   try {
     const sale = await Sale.findById(req.params.id);
+    console.log("📖 Sale from DB has costs:", sale?.costs);
     if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
 
     // Unmark devices as sold

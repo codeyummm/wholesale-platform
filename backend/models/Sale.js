@@ -70,6 +70,13 @@ const saleSchema = new mongoose.Schema({
       phone: String
     }
   },
+  // Additional Costs
+  costs: {
+    handling: { type: Number, default: 0 },
+    packaging: { type: Number, default: 0 },
+    marketplaceFees: { type: Number, default: 0 },
+    other: { type: Number, default: 0 }
+  },
   notes: String,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
