@@ -943,16 +943,86 @@ export default function SalesList() {
             )}
 
             {/* Financials */}
-            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <div><span style={{ fontSize: '12px', color: '#64748b' }}>Subtotal</span><div style={{ fontWeight: '600' }}>${selectedSale.subtotal?.toFixed(2)}</div></div>
-              {selectedSale.shipping?.shippingCost > 0 && (
-                <div><span style={{ fontSize: '12px', color: '#64748b' }}>Shipping</span><div style={{ fontWeight: '600' }}>${selectedSale.shipping.shippingCost?.toFixed(2)}</div></div>
+            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '8px' }}>FINANCIAL BREAKDOWN</div>
+              
+              {/* Revenue */}
+              <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '3px' }}>
+                  <span style={{ color: '#64748b' }}>Cost Price:</span>
+                  <span style={{ color: '#dc2626', fontWeight: '500' }}>${selectedSale.items?.reduce((sum, i) => sum + (i.costPrice || 0), 0).toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '3px' }}>
+                  <span style={{ color: '#64748b' }}>Sale Price:</span>
+                  <span style={{ fontWeight: '500' }}>${selectedSale.subtotal?.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', paddingTop: '4px', borderTop: '1px dashed #e2e8f0' }}>
+                  <span style={{ color: '#059669', fontWeight: '500' }}>Gross Profit:</span>
+                  <span style={{ color: '#059669', fontWeight: '600' }}>${(selectedSale.subtotal - selectedSale.items?.reduce((sum, i) => sum + (i.costPrice || 0), 0)).toFixed(2)}</span>
+                </div>
+              </div>
+              
+              {/* Deductions */}
+              {(selectedSale.costs?.marketplaceFees > 0 || selectedSale.shipping?.shippingCost > 0 || selectedSale.costs?.handling > 0 || selectedSale.costs?.packaging > 0) && (
+                <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>DEDUCTIONS</div>
+                  {selectedSale.costs?.marketplaceFees > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '2px' }}>
+                      <span style={{ color: '#64748b' }}>Platform Fees:</span>
+                      <span style={{ color: '#dc2626' }}>-${selectedSale.costs.marketplaceFees?.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedSale.shipping?.shippingCost > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '2px' }}>
+                      <span style={{ color: '#64748b' }}>Shipping:</span>
+                      <span style={{ color: '#dc2626' }}>-${selectedSale.shipping.shippingCost?.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedSale.costs?.handling > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '2px' }}>
+                      <span style={{ color: '#64748b' }}>Handling:</span>
+                      <span style={{ color: '#dc2626' }}>-${selectedSale.costs.handling?.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedSale.costs?.packaging > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '2px' }}>
+                      <span style={{ color: '#64748b' }}>Packaging:</span>
+                      <span style={{ color: '#dc2626' }}>-${selectedSale.costs.packaging?.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
               )}
-              <div><span style={{ fontSize: '12px', color: '#64748b' }}>Discount</span><div style={{ fontWeight: '600' }}>-${selectedSale.discount?.toFixed(2)}</div></div>
-              <div><span style={{ fontSize: '12px', color: '#64748b' }}>Total</span><div style={{ fontSize: '18px', fontWeight: '700' }}>${selectedSale.totalAmount?.toFixed(2)}</div></div>
-              <div><span style={{ fontSize: '12px', color: '#64748b' }}>Profit</span><div style={{ fontSize: '18px', fontWeight: '700', color: '#059669' }}>${selectedSale.totalProfit?.toFixed(2)}</div></div>
-              <div><span style={{ fontSize: '12px', color: '#64748b' }}>Payment</span><div style={{ fontWeight: '500', textTransform: 'capitalize' }}>{selectedSale.paymentMethod?.replace('_', ' ')}</div></div>
-              <div><span style={{ fontSize: '12px', color: '#64748b' }}>Status</span><div style={{ fontWeight: '500', textTransform: 'capitalize' }}>{selectedSale.status}</div></div>
+              
+              {/* Totals */}
+              <div>
+                {selectedSale.discount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                    <span style={{ color: '#64748b' }}>Discount:</span>
+                    <span style={{ color: '#dc2626' }}>-${selectedSale.discount?.toFixed(2)}</span>
+                  </div>
+                )}
+                {selectedSale.tax > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
+                    <span style={{ color: '#64748b' }}>Tax:</span>
+                    <span>+${selectedSale.tax?.toFixed(2)}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '2px solid #e2e8f0', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600' }}>Customer Pays:</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700' }}>${selectedSale.totalAmount?.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>Net Profit:</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#059669' }}>${selectedSale.totalProfit?.toFixed(2)}</span>
+                </div>
+              </div>
+              
+              {/* Payment & Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                <div><span style={{ fontSize: '11px', color: '#64748b' }}>Payment</span><div style={{ fontWeight: '600', textTransform: 'capitalize' }}>{selectedSale.paymentMethod?.replace('_', ' ')}</div></div>
+                <div><span style={{ fontSize: '11px', color: '#64748b' }}>Status</span><div style={{ fontWeight: '600', color: '#10b981', textTransform: 'capitalize' }}>{selectedSale.status}</div></div>
+              </div>
+            </div>
             </div>
 
             <button onClick={() => setShowDetailModal(false)}
