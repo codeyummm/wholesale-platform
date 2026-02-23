@@ -301,7 +301,9 @@ export default function SalesList() {
   const getSubtotal = () => saleForm.items.reduce((sum, item) => sum + item.salePrice, 0);
   const getTotal = () => {
     const shippingCost = parseFloat(saleForm.shipping?.shippingCost) || 0;
-    return getSubtotal() - saleForm.discount + saleForm.tax + shippingCost;
+    const discount = parseFloat(saleForm.discount) || 0;
+    const tax = parseFloat(saleForm.tax) || 0;
+    return getSubtotal() - discount + tax + shippingCost;
   };
   const getTotalProfit = () => {
     const itemProfits = saleForm.items.reduce((sum, item) => sum + item.profit, 0);
