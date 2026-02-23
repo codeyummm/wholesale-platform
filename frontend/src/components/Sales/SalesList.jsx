@@ -725,6 +725,37 @@ export default function SalesList() {
               </div>
             )}
 
+
+            {/* Additional Costs */}
+            <div style={{ background: '#fff7ed', padding: '12px', borderRadius: '8px', border: '1px solid #fed7aa', marginBottom: '14px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: '#b45309', marginBottom: '10px' }}>Additional Costs</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={lbl}>Platform Fees</label>
+                  <input type="number" step="0.01" value={saleForm.costs?.marketplaceFees || 0}
+                    onChange={(e) => setSaleForm(prev => ({ ...prev, costs: { ...prev.costs, marketplaceFees: parseFloat(e.target.value) || 0 } }))}
+                    style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>Handling</label>
+                  <input type="number" step="0.01" value={saleForm.costs?.handling || 0}
+                    onChange={(e) => setSaleForm(prev => ({ ...prev, costs: { ...prev.costs, handling: parseFloat(e.target.value) || 0 } }))}
+                    style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>Packaging</label>
+                  <input type="number" step="0.01" value={saleForm.costs?.packaging || 0}
+                    onChange={(e) => setSaleForm(prev => ({ ...prev, costs: { ...prev.costs, packaging: parseFloat(e.target.value) || 0 } }))}
+                    style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>Other Costs</label>
+                  <input type="number" step="0.01" value={saleForm.costs?.other || 0}
+                    onChange={(e) => setSaleForm(prev => ({ ...prev, costs: { ...prev.costs, other: parseFloat(e.target.value) || 0 } }))}
+                    style={inp} />
+                </div>
+              </div>
+            </div>
             {/* Totals + Payment */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
