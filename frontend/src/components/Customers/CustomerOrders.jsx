@@ -64,7 +64,7 @@ export default function CustomerOrders() {
             <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Customer Details & Order History</p>
           </div>
         </div>
-        <button onClick={() => navigate(`/sales?customerId=${customerId}`)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
+        <button onClick={() => { navigate(`/sales?customerId=${customerId}&openModal=true`); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
           <Plus size={20} /> Create Sale
         </button>
       </div>
@@ -213,7 +213,7 @@ export default function CustomerOrders() {
           <div style={{ textAlign: 'center', padding: '48px', background: '#f8fafc', borderRadius: '10px' }}>
             <ShoppingCart size={48} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
             <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '16px' }}>No orders yet</p>
-            <button onClick={() => navigate(`/sales?customerId=${customerId}`)} style={{ background: '#10b981', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
+            <button onClick={() => { navigate(`/sales?customerId=${customerId}&openModal=true`); }} style={{ background: '#10b981', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
               <Plus size={16} style={{ display: 'inline', marginRight: '6px' }} /> Create First Sale
             </button>
           </div>
