@@ -78,7 +78,7 @@ export default function SalesList() {
       trackingNumber: '', carrier: '', shippingMethod: '', shippingCost: 0,
       address: { name: '', street: '', city: '', state: '', zipCode: '', country: 'USA', phone: '' }
     },
-    costs: { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 },
+    costs: { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 }
   });
   const [selectedInventory, setSelectedInventory] = useState('');
   const [selectedDevice, setSelectedDevice] = useState('');
@@ -88,17 +88,16 @@ export default function SalesList() {
 
   useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status]);
 
-  // Auto-open modal when customerId param exists
+  // Auto-open create modal when customerId param exists
   useEffect(() => {
-    const urlCustomerId = searchParams.get('customerId');
-    const shouldOpen = searchParams.get('openModal');
-    console.log("Auto-open check:", { urlCustomerId, showCreateModal, customersLength: customers.length });
-    if (urlCustomerId && shouldOpen && !showCreateModal && customers.length > 0) {
+    const customerId = searchParams.get('customerId');
+    const openModal = searchParams.get('openModal');
+    if (customerId && openModal === 'true' && !showCreateModal) {
       openCreateModal();
     }
-  }, [searchParams, customers]);
+  }, [searchParams, showCreateModal]);
 
-  }, [searchParams]);
+  const fetchSales = async () => {
     setLoading(true);
     try {
       let url = `/sales?page=${pagination.page}&limit=${pagination.limit}`;
@@ -158,6 +157,7 @@ export default function SalesList() {
           address: { name: '', street: '', city: '', state: '', zipCode: '', country: 'USA', phone: '' }
         },
         costs: { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 },
+        tax: { amount: 0, rate: 0, collectedBy: 'Not Applicable' }
       });
     setShowShipping(false);
     setShowCreateModal(true);
