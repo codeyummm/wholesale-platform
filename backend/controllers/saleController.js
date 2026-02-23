@@ -82,7 +82,7 @@ exports.getSale = async (req, res) => {
 
 exports.createSale = async (req, res) => {
   try {
-    const { customerId, customerName, items, discount, tax, paymentMethod, paymentStatus, amountPaid, notes, salesChannel, shipping } = req.body;
+    const { customerId, customerName, items, discount, tax, paymentMethod, paymentStatus, amountPaid, notes, salesChannel, shipping, costs } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'At least one item is required' });
@@ -145,6 +145,7 @@ exports.createSale = async (req, res) => {
       amountPaid: amountPaid || 0,
       salesChannel: salesChannel || 'in_store',
       shipping: shipping || {},
+      costs: costs || { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 },
       notes,
       createdBy: req.user._id
     });
