@@ -749,32 +749,79 @@ export default function SalesList() {
                 </div>
               </div>
               <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
-                  <span style={{ color: '#64748b' }}>Subtotal</span><span style={{ fontWeight: '500' }}>${getSubtotal().toFixed(2)}</span>
-                </div>
-                {parseFloat(saleForm.shipping?.shippingCost) > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
-                    <span style={{ color: '#64748b' }}>Shipping</span><span style={{ fontWeight: '500' }}>${parseFloat(saleForm.shipping.shippingCost).toFixed(2)}</span>
+              <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', border: '1px solid #e2e8f0' }}>
+                {/* Cost & Revenue */}
+                <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', marginBottom: '6px' }}>REVENUE</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '12px' }}>
+                    <span style={{ color: '#64748b' }}>Cost Price:</span>
+                    <span style={{ fontWeight: '500', color: '#dc2626' }}>${saleForm.items.reduce((sum, item) => sum + (item.costPrice || 0), 0).toFixed(2)}</span>
                   </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', alignItems: 'center' }}>
-                  <span style={{ color: '#64748b' }}>Discount</span>
-                  <input type="number" step="0.01" value={saleForm.discount} onChange={(e) => setSaleForm(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
-                    style={{ width: '70px', padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '13px', textAlign: 'right' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '12px' }}>
+                    <span style={{ color: '#64748b' }}>Sale Price:</span>
+                    <span style={{ fontWeight: '500' }}>${getSubtotal().toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', paddingTop: '4px', borderTop: '1px dashed #e2e8f0' }}>
+                    <span style={{ color: '#059669', fontWeight: '500' }}>Gross Profit:</span>
+                    <span style={{ fontWeight: '600', color: '#059669' }}>${(getSubtotal() - saleForm.items.reduce((sum, item) => sum + (item.costPrice || 0), 0)).toFixed(2)}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px', alignItems: 'center' }}>
-                  <span style={{ color: '#64748b' }}>Tax</span>
-                  <input type="number" step="0.01" value={saleForm.tax} onChange={(e) => setSaleForm(prev => ({ ...prev, tax: parseFloat(e.target.value) || 0 }))}
-                    style={{ width: '70px', padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '13px', textAlign: 'right' }} />
+                
+                {/* Deductions */}
+                <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', marginBottom: '6px' }}>DEDUCTIONS</div>
+                  {parseFloat(saleForm.costs?.marketplaceFees) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontSize: '11px' }}>
+                      <span style={{ color: '#64748b' }}>Platform Fees:</span>
+                      <span style={{ color: '#dc2626' }}>-${parseFloat(saleForm.costs.marketplaceFees).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {parseFloat(saleForm.shipping?.shippingCost) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontSize: '11px' }}>
+                      <span style={{ color: '#64748b' }}>Shipping:</span>
+                      <span style={{ color: '#dc2626' }}>-${parseFloat(saleForm.shipping.shippingCost).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {parseFloat(saleForm.costs?.handling) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontSize: '11px' }}>
+                      <span style={{ color: '#64748b' }}>Handling:</span>
+                      <span style={{ color: '#dc2626' }}>-${parseFloat(saleForm.costs.handling).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {parseFloat(saleForm.costs?.packaging) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontSize: '11px' }}>
+                      <span style={{ color: '#64748b' }}>Packaging:</span>
+                      <span style={{ color: '#dc2626' }}>-${parseFloat(saleForm.costs.packaging).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
-                <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>Total</span>
-                  <span style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>${getTotal().toFixed(2)}</span>
+                
+                {/* Adjustments */}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', alignItems: 'center' }}>
+                    <span style={{ color: '#64748b' }}>Discount:</span>
+                    <input type="number" step="0.01" value={saleForm.discount} onChange={(e) => setSaleForm(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
+                      style={{ width: '70px', padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '12px', textAlign: 'right' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', alignItems: 'center' }}>
+                    <span style={{ color: '#64748b' }}>Tax:</span>
+                    <input type="number" step="0.01" value={saleForm.tax} onChange={(e) => setSaleForm(prev => ({ ...prev, tax: parseFloat(e.target.value) || 0 }))}
+                      style={{ width: '70px', padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '12px', textAlign: 'right' }} />
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                  <span style={{ color: '#059669' }}>Profit</span>
-                  <span style={{ fontWeight: '600', color: '#059669' }}>${getTotalProfit().toFixed(2)}</span>
+                
+                {/* Total */}
+                <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Customer Pays:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>${getTotal().toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#059669' }}>Net Profit:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#059669' }}>${getTotalProfit().toFixed(2)}</span>
+                  </div>
                 </div>
+              </div>
               </div>
             </div>
 
