@@ -172,6 +172,58 @@ export default function CustomerOrders() {
 
                   {/* Shipping & Details */}
                   <div>
+                    {/* Financial Breakdown */}
+                    <div style={{ background: 'white', padding: '12px', borderRadius: '6px', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '8px' }}>FINANCIAL BREAKDOWN</div>
+                      
+                      <div style={{ marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '2px' }}>
+                          <span style={{ color: '#64748b' }}>Cost:</span>
+                          <span style={{ color: '#dc2626', fontWeight: '500' }}>${sale.items?.reduce((sum, i) => sum + (i.costPrice || 0), 0).toFixed(2)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '2px' }}>
+                          <span style={{ color: '#64748b' }}>Sale:</span>
+                          <span style={{ fontWeight: '500' }}>${sale.items?.reduce((sum, i) => sum + (i.salePrice || 0), 0).toFixed(2)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', paddingTop: '3px', borderTop: '1px dashed #e2e8f0' }}>
+                          <span style={{ color: '#059669', fontWeight: '500' }}>Gross:</span>
+                          <span style={{ color: '#059669', fontWeight: '600' }}>
+                            ${(sale.items?.reduce((sum, i) => sum + (i.salePrice || 0), 0) - sale.items?.reduce((sum, i) => sum + (i.costPrice || 0), 0)).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {(sale.costs?.marketplaceFees > 0 || sale.shipping?.shippingCost > 0 || sale.costs?.handling > 0) && (
+                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
+                          {sale.costs?.marketplaceFees > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                              <span>Platform:</span>
+                              <span style={{ color: '#dc2626' }}>-${sale.costs.marketplaceFees.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {sale.shipping?.shippingCost > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                              <span>Shipping:</span>
+                              <span style={{ color: '#dc2626' }}>-${sale.shipping.shippingCost.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {sale.costs?.handling > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                              <span>Handling:</span>
+                              <span style={{ color: '#dc2626' }}>-${sale.costs.handling.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '2px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                          <span style={{ fontWeight: '600', color: '#0f172a' }}>Net Profit:</span>
+                          <span style={{ fontWeight: '700', color: '#10b981' }}>${sale.totalProfit?.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {sale.shipping?.trackingNumber && (
                       <div style={{ background: 'white', padding: '12px', borderRadius: '6px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
                         <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginBottom: '6px' }}>SHIPPING</div>
