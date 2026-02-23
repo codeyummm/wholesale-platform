@@ -90,21 +90,14 @@ export default function SalesList() {
 
   // Auto-open modal when customerId param exists
   useEffect(() => {
-    const urlCustomerId && searchParams.get('openModal') = searchParams.get('customerId');
+    const urlCustomerId = searchParams.get('customerId');
+    const shouldOpen = searchParams.get('openModal');
     console.log("Auto-open check:", { urlCustomerId, showCreateModal, customersLength: customers.length });
-    if (urlCustomerId && !showCreateModal && customers.length > 0) {
+    if (urlCustomerId && shouldOpen && !showCreateModal && customers.length > 0) {
       openCreateModal();
     }
   }, [searchParams, customers]);
 
-  const fetchSales = async () => {
-
-  // Auto-open create modal if customerId in URL
-  useEffect(() => {
-    const urlCustomerId = searchParams.get('customerId');
-    if (urlCustomerId && !showCreateModal) {
-      openCreateModal();
-    }
   }, [searchParams]);
     setLoading(true);
     try {
