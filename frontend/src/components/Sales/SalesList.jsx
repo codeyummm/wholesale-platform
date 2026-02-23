@@ -89,6 +89,14 @@ export default function SalesList() {
   useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status]);
 
   const fetchSales = async () => {
+
+  // Auto-open create modal if customerId in URL
+  useEffect(() => {
+    const urlCustomerId = searchParams.get('customerId');
+    if (urlCustomerId && !showCreateModal) {
+      openCreateModal();
+    }
+  }, [searchParams]);
     setLoading(true);
     try {
       let url = `/sales?page=${pagination.page}&limit=${pagination.limit}`;
