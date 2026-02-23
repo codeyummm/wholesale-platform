@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import SaleScanner from '../SaleScanner';
@@ -85,6 +85,7 @@ export default function SalesList() {
   const [manualPrice, setManualPrice] = useState('');
   const [showShipping, setShowShipping] = useState(false);
   const [searchParams] = useSearchParams();
+  const hasAutoOpened = useRef(false);
 
   useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status]);
 
@@ -92,10 +93,11 @@ export default function SalesList() {
   useEffect(() => {
     const customerId = searchParams.get('customerId');
     const openModal = searchParams.get('openModal');
-    if (customerId && openModal === 'true' && !showCreateModal) {
+    if (customerId && openModal === 'true' && !hasAutoOpened.current) {
+      hasAutoOpened.current = true;
       openCreateModal();
     }
-  }, [searchParams, showCreateModal]);
+  }, [searchParams]);
 
   const fetchSales = async () => {
     setLoading(true);
