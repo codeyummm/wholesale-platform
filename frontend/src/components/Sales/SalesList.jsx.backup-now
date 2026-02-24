@@ -448,9 +448,9 @@ export default function SalesList() {
       </div>
 
       {/* Sales Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
             <Loader2 size={32} color="#6366f1" style={{ animation: 'spin 1s linear infinite' }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
@@ -461,9 +461,9 @@ export default function SalesList() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+              <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <tr>
                   {['Sale #','Customer','Items','Channel','Total','Profit','Status','Tracking','Date','Actions'].map(h => (
                     <th key={h} style={{ padding: '12px 14px', textAlign: h==='Total'||h==='Profit'||h==='Actions'?'right':h==='Status'||h==='Channel'?'center':'left', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
