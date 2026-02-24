@@ -97,21 +97,21 @@ export default function CustomerList() {
   return (
     <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Customers</h1>
-          <p className="text-gray-500 text-sm">Manage your buyers and wholesale clients</p>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>Customers</h1>
+          <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Manage your buyers and wholesale clients</p>
         </div>
         <button onClick={() => { resetForm(); setEditingId(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #4338ca, #6366f1)', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
           <Plus size={18} /> Add Customer
         </button>
       </div>
 
       {/* Search + Filter */}
-      <div className="flex-1 min-w-[200px] relative">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-          <Search className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm" size={18} />
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
           <input type="text" placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none' }} />
         </div>
@@ -132,7 +132,7 @@ export default function CustomerList() {
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : customers.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+        <div style={{ textAlign: 'center', padding: '48px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
           <UserCircle size={48} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
           <p style={{ color: '#64748b', marginBottom: '16px' }}>No customers found</p>
           <button onClick={() => { resetForm(); setEditingId(null); setShowModal(true); }}
