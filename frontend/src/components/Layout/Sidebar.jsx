@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   Package,
@@ -32,7 +35,7 @@ const navItems = [
 ];
 
 const adminItems = [
-  { path: '/user-management', icon: Settings, label: 'User Mgmt' },
+  { path: '/user-management', icon: Settings, label: 'User Management' },
 ];
 
 export default function Sidebar() {
@@ -49,178 +52,109 @@ export default function Sidebar() {
   const allItems = user?.role === 'admin' ? [...navItems, ...adminItems] : navItems;
 
   const sidebarContent = (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      background: 'linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%)',
-      color: 'white',
-      transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      width: collapsed ? '72px' : '240px',
-      overflow: 'hidden',
-    }}>
-      {/* Logo */}
-      <div style={{
-        padding: collapsed ? '20px 0' : '20px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        gap: '12px',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        minHeight: '72px',
-      }}>
-        <div style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '10px',
-          background: 'linear-gradient(135deg, #818cf8, #c084fc)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          boxShadow: '0 4px 12px rgba(129, 140, 248, 0.4)',
-        }}>
-          <Smartphone size={20} color="white" />
+    <div className={`flex flex-col h-full bg-white border-r border-gray-200 transition-all duration-300 ${
+      collapsed ? 'w-[72px]' : 'w-60'
+    }`}>
+      <div className={`flex items-center gap-3 border-b border-gray-200 min-h-[72px] ${
+        collapsed ? 'justify-center p-5' : 'px-4 py-5'
+      }`}>
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/40">
+          <Smartphone size={20} className="text-gray-900" />
         </div>
         {!collapsed && (
-          <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            <div style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '-0.02em' }}>WholesaleHub</div>
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: '400' }}>Mobile Platform</div>
+          <div className="overflow-hidden">
+            <div className="text-sm font-bold tracking-tight">WholesaleHub</div>
+            <div className="text-[11px] text-gray-900/50 font-medium">Mobile Platform</div>
           </div>
         )}
       </div>
 
-      {/* Navigation */}
-      <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto', overflowX: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      <nav className="flex-1 p-3 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <div className="space-y-1">
           {allItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               onClick={() => setMobileOpen(false)}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: collapsed ? '10px 0' : '10px 12px',
-                justifyContent: collapsed ? 'center' : 'flex-start',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                color: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
-                fontWeight: isActive ? '600' : '400',
-                fontSize: '13.5px',
-                transition: 'all 0.15s ease',
-                position: 'relative',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-              })}
-              onMouseEnter={(e) => {
-                if (!e.currentTarget.classList.contains('active')) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                const isActive = e.currentTarget.getAttribute('aria-current') === 'page';
-                if (!isActive) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
-                }
-              }}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                  collapsed ? 'justify-center' : ''
+                } ${
+                  isActive
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-gray-900/60 hover:bg-gray-100 hover:text-gray-900/90'
+                }`
+              }
             >
-              <item.icon size={19} style={{ flexShrink: 0 }} />
-              {!collapsed && <span>{item.label}</span>}
+              {({ isActive }) => (
+                <>
+                  <item.icon 
+                    size={19} 
+                    className={`flex-shrink-0 transition-colors ${
+                      isActive ? 'text-primary' : 'group-hover:text-primary'
+                    }`}
+                  />
+                  {!collapsed && (
+                    <span className="text-[13.5px] whitespace-nowrap">{item.label}</span>
+                  )}
+                  {!collapsed && isActive && (
+                    <div className="ml-auto w-1 h-1 rounded-full bg-primary-400" />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </div>
       </nav>
 
-      {/* Footer */}
-      <div style={{
-        padding: collapsed ? '16px 8px' : '16px',
-        borderTop: '1px solid rgba(255,255,255,0.1)',
-      }}>
-        <button
+      <div className={`border-t border-gray-200 ${collapsed ? 'p-2' : 'p-4'}`}>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setCollapsed(!collapsed)}
-          className="sidebar-collapse-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            gap: '12px',
-            width: '100%',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: 'none',
-            background: 'rgba(255,255,255,0.05)',
-            color: 'rgba(255,255,255,0.5)',
-            cursor: 'pointer',
-            fontSize: '13px',
-            marginBottom: '8px',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-          }}
+          className={`w-full mb-3 text-gray-900/50 hover:text-gray-900/80 hover:bg-gray-100 ${
+            collapsed ? 'justify-center px-0' : 'justify-start'
+          }`}
         >
-          {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /><span>Collapse</span></>}
-        </button>
+          {collapsed ? (
+            <ChevronRight size={18} />
+          ) : (
+            <>
+              <ChevronLeft size={18} className="mr-2" />
+              <span className="text-xs">Collapse</span>
+            </>
+          )}
+        </Button>
 
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: collapsed ? '8px 0' : '8px',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-        }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #f472b6, #c084fc)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '13px',
-            fontWeight: '700',
-            flexShrink: 0,
-          }}>
+        <Separator className="bg-gray-100 mb-3" />
+
+        <div className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : ''}`}>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-md">
             {user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
           {!collapsed && (
-            <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-              <div style={{ fontSize: '12.5px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user?.email || 'User'}
+            <>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold truncate">
+                  {user?.email || 'User'}
+                </div>
+                <Badge 
+                  variant="secondary" 
+                  className="text-[10px] capitalize bg-gray-100 text-gray-900/60 border-0 hover:bg-white/15"
+                >
+                  {user?.role || 'staff'}
+                </Badge>
               </div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'capitalize' }}>
-                {user?.role || 'staff'}
-              </div>
-            </div>
-          )}
-          {!collapsed && (
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'rgba(255,255,255,0.4)',
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '6px',
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'none'; }}
-            >
-              <LogOut size={16} />
-            </button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="h-8 w-8 text-gray-900/40 hover:text-red-400 hover:bg-red-50"
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -229,78 +163,55 @@ export default function Sidebar() {
 
   return (
     <>
-      <button
-        className="mobile-menu-btn"
+      <Button
+        variant="default"
+        size="icon"
         onClick={() => setMobileOpen(true)}
-        style={{
-          position: 'fixed',
-          top: '16px',
-          left: '16px',
-          zIndex: 60,
-          display: 'none',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-          borderRadius: '10px',
-          border: 'none',
-          background: 'linear-gradient(135deg, #4338ca, #6366f1)',
-          color: 'white',
-          cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(67, 56, 202, 0.4)',
-        }}
+        className="md:hidden fixed top-4 left-4 z-50 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/40"
       >
         <Menu size={20} />
-      </button>
+      </Button>
 
       {mobileOpen && (
         <div
-          className="mobile-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 70,
-            display: 'none',
-          }}
+          className="md:hidden fixed inset-0 bg-black/50 z-[60] animate-in fade-in duration-200"
           onClick={() => setMobileOpen(false)}
         >
           <div
-            style={{ width: '240px', height: '100%' }}
+            className="w-60 h-full animate-in slide-in-from-left duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setMobileOpen(false)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: 'rgba(255,255,255,0.1)',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer',
-                borderRadius: '8px',
-                padding: '6px',
-                zIndex: 80,
-              }}
+              className="absolute top-4 right-4 text-gray-900 hover:bg-gray-100 z-[70]"
             >
               <X size={18} />
-            </button>
-            {React.cloneElement(sidebarContent, {})}
+            </Button>
+            {sidebarContent}
           </div>
         </div>
       )}
 
-      <div className="desktop-sidebar" style={{ flexShrink: 0 }}>
+      <div className="hidden md:block flex-shrink-0">
         {sidebarContent}
       </div>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .mobile-menu-btn { display: flex !important; }
-          .mobile-overlay { display: block !important; }
-          .desktop-sidebar { display: none !important; }
-          .sidebar-collapse-btn { display: none !important; }
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
       `}</style>
     </>
