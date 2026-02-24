@@ -249,23 +249,23 @@ const InvoicesPage = () => {
   const handleScanComplete = () => { setShowScanner(false); fetchInvoices(); };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '2rem' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <h1 className="text-3xl font-bold text-gray-900">Invoice Management</h1>
-          <div className="flex gap-3">
-            <button onClick={exportToCSV} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937' }}>Invoice Management</h1>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={exportToCSV} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #d1d5db', color: '#374151', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: '500' }}>
               <Download size={20} />Export
             </button>
-            <button onClick={() => setShowScanner(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all">
+            <button onClick={() => setShowScanner(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
               <Camera size={20} />Scan Invoice
             </button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
           <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} size={20} />
           <input
             type="text"
@@ -278,15 +278,15 @@ const InvoicesPage = () => {
 
         {/* Loading/Empty States */}
         {loading ? (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <Loader2 size={48} color="#667eea" className="text-center py-12 bg-white rounded-xl" />
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
+            <Loader2 size={48} color="#667eea" style={{ margin: '0 auto', animation: 'spin 1s linear infinite' }} />
             <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading invoices...</p>
           </div>
         ) : filteredInvoices.length === 0 ? (
-          <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all">
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
             <FileText size={48} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
             <p style={{ color: '#6b7280', marginBottom: '1rem' }}>No invoices found</p>
-            <button onClick={() => setShowScanner(true)} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+            <button onClick={() => setShowScanner(true)} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}>
               Scan Invoice
             </button>
           </div>
