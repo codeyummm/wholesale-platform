@@ -145,44 +145,44 @@ export default function InventoryList() {
   const handleScanComplete = () => { setShowScanModal(false); fetchInventory(); alert('Invoice scanned and saved successfully!'); };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
-          <div className="flex gap-3">
-            <button onClick={() => setShowScanModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all"><Camera size={20} />Scan Invoice</button>
-            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors"><Plus size={20} />Add Item</button>
+    <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '2rem' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937' }}>Inventory Management</h1>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={() => setShowScanModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: '500' }}><Camera size={20} />Scan Invoice</button>
+            <button onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: '500' }}><Plus size={20} />Add Item</button>
           </div>
         </div>
 
-        <div className="mb-6 relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input type="text" placeholder="Search by model, brand, or IMEI..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+        <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} size={20} />
+          <input type="text" placeholder="Search by model, brand, or IMEI..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', paddingLeft: '3rem', padding: '0.75rem 1rem 0.75rem 3rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem' }} />
         </div>
 
         {loading ? (
-          <div className="text-center py-12 bg-white rounded-xl">
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
             <div style={{ display: 'inline-block', width: '3rem', height: '3rem', border: '4px solid #e5e7eb', borderTop: '4px solid #2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
             <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading inventory...</p>
           </div>
         ) : inventory.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl">
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
             <Smartphone size={48} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
             <p style={{ color: '#6b7280', marginBottom: '1rem' }}>No inventory items found</p>
-            <button onClick={() => setShowScanModal(true)} className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all mr-2">Scan Invoice</button>
-            <button onClick={() => setShowModal(true)} className="bg-primary text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Manually</button>
+            <button onClick={() => setShowScanModal(true)} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', marginRight: '0.5rem' }}>Scan Invoice</button>
+            <button onClick={() => setShowModal(true)} style={{ background: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}>Add Manually</button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+          <div style={{ background: 'white', borderRadius: '0.5rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700"></th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Product</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Specs</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Stock</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Price</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151', width: '40px' }}></th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Product</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Specs</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Stock</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Price</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
