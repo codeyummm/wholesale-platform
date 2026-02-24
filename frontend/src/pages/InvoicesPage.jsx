@@ -255,17 +255,17 @@ const InvoicesPage = () => {
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Invoice Management</h1>
           <div className="flex gap-3">
-            <button onClick={exportToCSV} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+            <button onClick={exportToCSV} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-medium hover:bg-gray-50">
               <Download size={20} />Export
             </button>
-            <button onClick={() => setShowScanner(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all">
+            <button onClick={() => setShowScanner(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800">
               <Camera size={20} />Scan Invoice
             </button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
           <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} size={20} />
           <input
             type="text"
@@ -279,11 +279,11 @@ const InvoicesPage = () => {
         {/* Loading/Empty States */}
         {loading ? (
           <div className="text-center py-12 bg-white rounded-xl">
-            <Loader2 size={48} color="#667eea" className="text-center py-12 bg-white rounded-xl" />
+            <Loader2 size={48} color="#667eea" style={{ margin: '0 auto', animation: 'spin 1s linear infinite' }} />
             <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading invoices...</p>
           </div>
         ) : filteredInvoices.length === 0 ? (
-          <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all">
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '0.5rem' }}>
             <FileText size={48} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
             <p style={{ color: '#6b7280', marginBottom: '1rem' }}>No invoices found</p>
             <button onClick={() => setShowScanner(true)} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">

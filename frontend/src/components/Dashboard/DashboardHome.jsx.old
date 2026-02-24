@@ -1,319 +1,204 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../utils/api';
-import {
-  Package,
-  Users,
-  FileText,
-  AlertTriangle,
-  ArrowRight,
-  Smartphone,
-  DollarSign,
-  BarChart3,
-  CheckCircle,
-  ChevronRight,
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { 
+  DollarSign, 
+  TrendingUp, 
+  Package, 
+  Users, 
+  ShoppingCart,
+  AlertCircle 
 } from 'lucide-react';
 
-export default function DashboardHome() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+export default function Dashboard() {
   const [stats, setStats] = useState({
-    totalInventory: 0,
-    availableDevices: 0,
-    soldDevices: 0,
-    totalSuppliers: 0,
-    totalInvoices: 0,
-    inventoryValue: 0,
-    lowStockItems: [],
-    recentInventory: [],
-    recentInvoices: [],
-    topBrands: [],
+    totalSales: 0,
+    totalRevenue: 0,
+    totalProfit: 0,
+    totalCustomers: 0,
+    lowStockItems: 0,
+    recentSales: []
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchDashboardData(); }, []);
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const [inventoryRes, suppliersRes, invoicesRes] = await Promise.all([
-        api.get('/inventory?limit=200'),
-        api.get('/suppliers'),
-        api.get('/invoices?limit=50'),
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [salesRes, inventoryRes, customersRes] = await Promise.all([
+        axios.get(`${API_URL}/sales`, { headers }),
+        axios.get(`${API_URL}/inventory`, { headers }),
+        axios.get(`${API_URL}/customers`, { headers })
       ]);
 
-      const inventory = inventoryRes.data.data || [];
-      const suppliers = suppliersRes.data.data || [];
-      const invoices = invoicesRes.data.data || [];
+      const sales = salesRes.data;
+      const inventory = inventoryRes.data;
+      const customers = customersRes.data;
 
-      let totalDevices = 0;
-      let availableDevices = 0;
-      let soldDevices = 0;
-      let inventoryValue = 0;
-      const brandCounts = {};
-      const lowStockItems = [];
-
-      inventory.forEach((item) => {
-        const available = item.devices?.filter((d) => !d.isSold).length || 0;
-        const sold = item.devices?.filter((d) => d.isSold).length || 0;
-        totalDevices += item.quantity || 0;
-        availableDevices += available;
-        soldDevices += sold;
-        inventoryValue += available * (item.price?.retail || 0);
-
-        const brand = item.brand || 'Unknown';
-        brandCounts[brand] = (brandCounts[brand] || 0) + (item.quantity || 0);
-
-        if (available <= (item.lowStockThreshold || 10) && available > 0) {
-          lowStockItems.push({ ...item, available });
-        }
-      });
-
-      const topBrands = Object.entries(brandCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([name, count]) => ({ name, count }));
+      const totalRevenue = sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
+      const totalProfit = sales.reduce((sum, sale) => sum + (sale.totalProfit || 0), 0);
+      const lowStock = inventory.filter(item => item.quantity < item.minStockLevel).length;
 
       setStats({
-        totalInventory: inventory.length,
-        totalDevices,
-        availableDevices,
-        soldDevices,
-        totalSuppliers: suppliers.length,
-        totalInvoices: invoices.length,
-        inventoryValue,
-        lowStockItems: lowStockItems.slice(0, 5),
-        recentInventory: inventory.slice(0, 5),
-        recentInvoices: invoices.slice(0, 5),
-        topBrands,
+        totalSales: sales.length,
+        totalRevenue,
+        totalProfit,
+        totalCustomers: customers.length,
+        lowStockItems: lowStock,
+        recentSales: sales.slice(0, 5)
       });
+      setLoading(false);
     } catch (error) {
-      console.error('Dashboard data error:', error);
-    } finally {
+      console.error('Error fetching dashboard data:', error);
       setLoading(false);
     }
   };
 
-  const formatCurrency = (val) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`;
-    return `$${val.toFixed(0)}`;
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
+  const StatCard = ({ title, value, icon: Icon, trend, subtitle, colorClass }) => (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <div className="flex items-baseline gap-2 mt-2">
+              <h2 className="text-3xl font-bold">{value}</h2>
+              {trend && (
+                <span className={`text-sm flex items-center ${trend > 0 ? 'text-success' : 'text-danger'}`}>
+                  <TrendingUp size={14} className="mr-1" />
+                  {Math.abs(trend)}%
+                </span>
+              )}
+            </div>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+            )}
+          </div>
+          <div className={`rounded-full p-3 ${colorClass}`}>
+            <Icon className="w-6 h-6 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '40px', height: '40px',
-            border: '4px solid #e2e8f0', borderTop: '4px solid #6366f1',
-            borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
-          }} />
-          <p style={{ color: '#64748b' }}>Loading dashboard...</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  const statCards = [
-    { label: 'Total Products', value: stats.totalInventory, sub: `${stats.totalDevices} total units`, icon: Package, color: '#6366f1', bg: '#eef2ff', path: '/inventory' },
-    { label: 'Available Devices', value: stats.availableDevices, sub: `${stats.soldDevices} sold`, icon: Smartphone, color: '#10b981', bg: '#ecfdf5', path: '/inventory' },
-    { label: 'Inventory Value', value: formatCurrency(stats.inventoryValue), sub: 'At retail price', icon: DollarSign, color: '#f59e0b', bg: '#fffbeb', path: '/reports' },
-    { label: 'Suppliers', value: stats.totalSuppliers, sub: `${stats.totalInvoices} invoices`, icon: Users, color: '#8b5cf6', bg: '#f5f3ff', path: '/suppliers' },
-  ];
-
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>
-          {getGreeting()}, {user?.email?.split('@')[0] || 'there'} 👋
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '14px' }}>Here's what's happening with your business today.</p>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
       </div>
 
-      {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        {statCards.map((card, i) => (
-          <div key={i} onClick={() => navigate(card.path)}
-            style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative', overflow: 'hidden' }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <card.icon size={20} color={card.color} />
-              </div>
-              <ArrowRight size={16} color="#cbd5e1" />
-            </div>
-            <div style={{ fontSize: '26px', fontWeight: '700', color: '#0f172a', lineHeight: 1.2 }}>{card.value}</div>
-            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>{card.label}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{card.sub}</div>
-          </div>
-        ))}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Revenue"
+          value={`$${stats.totalRevenue.toLocaleString()}`}
+          icon={DollarSign}
+          trend={12.5}
+          subtitle="vs last month"
+          colorClass="bg-primary"
+        />
+        <StatCard
+          title="Total Profit"
+          value={`$${stats.totalProfit.toLocaleString()}`}
+          icon={TrendingUp}
+          trend={8.2}
+          subtitle="vs last month"
+          colorClass="bg-success"
+        />
+        <StatCard
+          title="Total Sales"
+          value={stats.totalSales}
+          icon={ShoppingCart}
+          subtitle={`${stats.totalCustomers} customers`}
+          colorClass="bg-info"
+        />
+        <StatCard
+          title="Low Stock Items"
+          value={stats.lowStockItems}
+          icon={AlertCircle}
+          subtitle="Needs restocking"
+          colorClass="bg-warning"
+        />
       </div>
 
-      {/* Middle Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }} className="dashboard-grid-2">
-        {/* Top Brands */}
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Top Brands</h3>
-            <BarChart3 size={18} color="#94a3b8" />
-          </div>
-          {stats.topBrands.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {stats.topBrands.map((brand, i) => {
-                const maxCount = stats.topBrands[0]?.count || 1;
-                const pct = (brand.count / maxCount) * 100;
-                const colors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
-                return (
-                  <div key={i}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: '#334155', fontWeight: '500' }}>{brand.name}</span>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>{brand.count} units</span>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Sales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recentSales.length > 0 ? (
+                stats.recentSales.map((sale, index) => (
+                  <div key={sale._id || index} className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{sale.customerName || 'Walk-in Customer'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(sale.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
-                    <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#6366f1', borderRadius: '3px', transition: 'width 0.6s ease' }} />
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">${sale.totalAmount?.toFixed(2)}</p>
+                      <Badge variant={sale.paymentStatus === 'paid' ? 'success' : 'warning'} className="text-xs">
+                        {sale.paymentStatus}
+                      </Badge>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No recent sales</p>
+              )}
             </div>
-          ) : (
-            <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No inventory data yet</p>
-          )}
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Low Stock */}
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Low Stock Alerts</h3>
-            <AlertTriangle size={18} color="#f59e0b" />
-          </div>
-          {stats.lowStockItems.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {stats.lowStockItems.map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fef3c7' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#1e293b' }}>{item.model}</div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>{item.brand}</div>
-                  </div>
-                  <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', background: '#fef3c7', color: '#92400e' }}>{item.available} left</span>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              <button className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors text-left">
+                <ShoppingCart className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="font-medium">New Sale</p>
+                  <p className="text-xs text-muted-foreground">Create a new sale transaction</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <CheckCircle size={24} color="#10b981" style={{ margin: '0 auto 8px' }} />
-              <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>All stock levels healthy</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="dashboard-grid-2">
-        {/* Recent Inventory */}
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Recent Inventory</h3>
-            <button onClick={() => navigate('/inventory')} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#6366f1', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }}>View all <ChevronRight size={14} /></button>
-          </div>
-          {stats.recentInventory.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {stats.recentInventory.map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '8px', background: '#f8fafc' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Smartphone size={16} color="#6366f1" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#1e293b' }}>{item.model}</div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>{item.brand} · {item.specifications?.storage || 'N/A'}</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>${item.price?.retail || 0}</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>Qty: {item.quantity}</div>
-                  </div>
+              </button>
+              <button className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors text-left">
+                <Package className="w-5 h-5 text-success" />
+                <div>
+                  <p className="font-medium">Add Inventory</p>
+                  <p className="text-xs text-muted-foreground">Add new items to inventory</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No inventory yet</p>
-          )}
-        </div>
-
-        {/* Recent Invoices */}
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Recent Invoices</h3>
-            <button onClick={() => navigate('/invoices')} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#6366f1', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }}>View all <ChevronRight size={14} /></button>
-          </div>
-          {stats.recentInvoices.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {stats.recentInvoices.map((inv, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '8px', background: '#f8fafc' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <FileText size={16} color="#8b5cf6" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#1e293b' }}>#{inv.invoiceNumber || 'N/A'}</div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>{inv.supplierName}</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>${inv.totalAmount?.toFixed(2) || '0.00'}</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : 'N/A'}</div>
-                  </div>
+              </button>
+              <button className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors text-left">
+                <Users className="w-5 h-5 text-info" />
+                <div>
+                  <p className="font-medium">New Customer</p>
+                  <p className="text-xs text-muted-foreground">Register a new customer</p>
                 </div>
-              ))}
+              </button>
             </div>
-          ) : (
-            <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No invoices yet</p>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Quick Actions */}
-      <div style={{ marginTop: '24px', background: 'linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%)', borderRadius: '12px', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '600', margin: '0 0 4px' }}>Quick Actions</h3>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', margin: 0 }}>Jump to common tasks</p>
-        </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {[
-            { label: 'Scan Invoice', path: '/invoices', icon: '📄' },
-            { label: 'Add Inventory', path: '/inventory', icon: '📦' },
-            { label: 'New Supplier', path: '/suppliers', icon: '👤' },
-            { label: 'Test Device', path: '/device-test', icon: '📱' },
-          ].map((action, i) => (
-            <button key={i} onClick={() => navigate(action.path)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.15s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
-            >
-              <span>{action.icon}</span> {action.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <style>{`
-        @media (max-width: 768px) {
-          .dashboard-grid-2 { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </div>
   );
 }
