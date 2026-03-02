@@ -401,7 +401,7 @@ export default function SalesList() {
           <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Create sales and track revenue</p>
         </div>
         <button onClick={openCreateModal}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#dbeafe', color: '#1d4ed8', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
           <Plus size={18} /> New Sale
         </button>
       </div>
@@ -863,7 +863,7 @@ export default function SalesList() {
               <button onClick={() => setShowCreateModal(false)}
                 style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
               <button onClick={handleCreateSale}
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: '#dbeafe', color: '#1d4ed8', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>
                 <Save size={16} /> Complete Sale
               </button>
             </div>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import DashboardHeader from './DashboardHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function DashboardHome() {
@@ -105,7 +106,9 @@ export default function DashboardHome() {
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
 
   return (
-    <div className="space-y-6">
+    <>
+      <DashboardHeader />
+      <div className="space-y-6">
       <div className="grid xl:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -373,5 +376,6 @@ export default function DashboardHome() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

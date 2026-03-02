@@ -70,7 +70,7 @@ export default function IMEILookup() {
             </div>
           </div>
           <button onClick={handleSearch} disabled={loading}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: loading ? '#94a3b8' : 'linear-gradient(135deg, #4338ca, #6366f1)', color: 'white', border: 'none', borderRadius: '8px', cursor: loading ? 'wait' : 'pointer', fontWeight: '600', fontSize: '14px', whiteSpace: 'nowrap' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: loading ? '#94a3b8' : '#dbeafe', color: loading ? 'white' : '#1d4ed8', border: 'none', borderRadius: '8px', cursor: loading ? 'wait' : 'pointer', fontWeight: '600', fontSize: '14px', whiteSpace: 'nowrap' }}>
             {loading ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <Search size={18} />}
             {loading ? 'Searching...' : 'Lookup'}
           </button>

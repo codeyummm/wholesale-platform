@@ -103,7 +103,7 @@ export default function CustomerList() {
           <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Manage your buyers and wholesale clients</p>
         </div>
         <button onClick={() => { resetForm(); setEditingId(null); setShowModal(true); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #4338ca, #6366f1)', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#dcfce7', color: '#15803d', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
           <Plus size={18} /> Add Customer
         </button>
       </div>
@@ -278,7 +278,7 @@ export default function CustomerList() {
                 <button type="button" onClick={() => { setShowModal(false); setEditingId(null); }}
                   style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>Cancel</button>
                 <button type="submit"
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: 'linear-gradient(135deg, #4338ca, #6366f1)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: '#dcfce7', color: '#15803d', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
                   <Save size={16} /> {editingId ? 'Update' : 'Create'}
                 </button>
               </div>

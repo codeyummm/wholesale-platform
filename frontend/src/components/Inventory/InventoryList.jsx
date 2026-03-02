@@ -150,8 +150,8 @@ export default function InventoryList() {
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
           <div className="flex gap-3">
-            <button onClick={() => setShowScanModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all"><Camera size={20} />Scan Invoice</button>
-            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors"><Plus size={20} />Add Item</button>
+            <button onClick={() => setShowScanModal(true)} className="flex items-center gap-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-5 py-2.5 rounded-lg font-medium transition-all"><Camera size={20} />Scan Invoice</button>
+            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-cyan-100 hover:bg-cyan-200 text-cyan-700 px-5 py-2.5 rounded-lg font-medium transition-colors"><Plus size={20} />Add Item</button>
           </div>
         </div>
 
@@ -169,8 +169,8 @@ export default function InventoryList() {
           <div className="text-center py-12 bg-white rounded-xl">
             <Smartphone size={48} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
             <p style={{ color: '#6b7280', marginBottom: '1rem' }}>No inventory items found</p>
-            <button onClick={() => setShowScanModal(true)} className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all mr-2">Scan Invoice</button>
-            <button onClick={() => setShowModal(true)} className="bg-primary text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Manually</button>
+            <button onClick={() => setShowScanModal(true)} className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-5 py-2.5 rounded-lg font-medium transition-all mr-2">Scan Invoice</button>
+            <button onClick={() => setShowModal(true)} className="bg-cyan-100 hover:bg-cyan-200 text-cyan-700 px-5 py-2.5 rounded-lg font-medium transition-colors">Add Manually</button>
           </div>
         ) : (
           <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">

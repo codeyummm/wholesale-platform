@@ -173,7 +173,7 @@ export default function SupplierList() {
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button type="button" onClick={() => { setShowModal(false); setEditingId(null); }} style={{ flex:1,padding:'10px',border:'1px solid #e2e8f0',borderRadius:'8px',background:'white',cursor:'pointer',fontWeight:'500' }}>Cancel</button>
-            <button type="submit" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'10px',background:'linear-gradient(135deg,#4338ca,#6366f1)',color:'white',border:'none',borderRadius:'8px',cursor:'pointer',fontWeight:'600' }}><Save size={16} /> {editingId?'Update':'Create'}</button>
+            <button type="submit" style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'10px',background:'#fef3c7',color:'#92400e',border:'none',borderRadius:'8px',cursor:'pointer',fontWeight:'600' }}><Save size={16} /> {editingId?'Update':'Create'}</button>
           </div>
         </form>
       </div>
@@ -424,7 +424,7 @@ export default function SupplierList() {
   return (<div>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px',flexWrap:'wrap',gap:'12px'}}>
       <div><h1 style={{fontSize:'24px',fontWeight:'700',color:'#0f172a',margin:'0 0 4px'}}>Suppliers</h1><p style={{color:'#64748b',fontSize:'14px',margin:0}}>Manage suppliers, invoices, and purchase history</p></div>
-      <button onClick={() => {resetForm();setEditingId(null);setShowModal(true);}} style={{display:'flex',alignItems:'center',gap:'8px',background:'linear-gradient(135deg,#4338ca,#6366f1)',color:'white',padding:'10px 20px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:'500',fontSize:'14px'}}><Plus size={18}/> Add Supplier</button>
+      <button onClick={() => {resetForm();setEditingId(null);setShowModal(true);}} style={{display:'flex',alignItems:'center',gap:'8px',background:'#fef3c7',color:'#92400e',padding:'10px 20px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:'500',fontSize:'14px'}}><Plus size={18}/> Add Supplier</button>
     </div>
     <div style={{marginBottom:'20px',position:'relative'}}><Search style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'#94a3b8'}} size={18}/><input type="text" placeholder="Search suppliers..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:'100%',padding:'10px 10px 10px 40px',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'14px'}}/></div>
     {loading?<div style={{textAlign:'center',padding:'48px',background:'white',borderRadius:'12px',border:'1px solid #e2e8f0'}}>Loading...</div>
