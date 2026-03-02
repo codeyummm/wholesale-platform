@@ -258,7 +258,7 @@ const InvoicesPage = () => {
             <button onClick={exportToCSV} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-medium hover:bg-gray-50">
               <Download size={20} />Export
             </button>
-            <button onClick={() => setShowScanner(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800">
+            <button onClick={() => setShowScanner(true)} className="flex items-center gap-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-5 py-2.5 rounded-lg font-medium ">
               <Camera size={20} />Scan Invoice
             </button>
           </div>
