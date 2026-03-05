@@ -10,20 +10,6 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState('light');
-  const [autoMode, setAutoMode] = useState(true);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const savedAutoMode = localStorage.getItem('autoMode');
-    
-    if (savedAutoMode === 'false') {
-      setAutoMode(false);
-      setTheme(savedTheme || 'light');
-    } else {
-      setAutoMode(true);
-      applyAutoTheme();
-    }
-  }, []);
 
   const applyAutoTheme = () => {
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -34,18 +20,13 @@ export const ThemeProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (autoMode) {
+    const savedTheme = localStorage.getItem('theme');
+    if (!savedTheme) {
       applyAutoTheme();
-      const interval = setInterval(applyAutoTheme, 3600000);
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => applyAutoTheme();
-      mediaQuery.addEventListener('change', handleChange);
-      return () => {
-        clearInterval(interval);
-        mediaQuery.removeEventListener('change', handleChange);
-      };
+    } else {
+      setTheme(savedTheme);
     }
-  }, [autoMode]);
+  }, []);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -53,23 +34,16 @@ export const ThemeProvider = ({ children }) => {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setAutoMode(false);
-    localStorage.setItem('autoMode', 'false');
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
-
-  const enableAutoMode = () => {
-    setAutoMode(true);
-    localStorage.setItem('autoMode', 'true');
-    applyAutoTheme();
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, autoMode, enableAutoMode }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
