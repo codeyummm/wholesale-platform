@@ -4,10 +4,12 @@ import {
   LayoutDashboard, ShoppingCart, Package, Users, Building2, 
   FileText, Search, UserCog, ChevronLeft, ChevronRight 
 } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { theme } = useTheme();
 
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -16,14 +18,18 @@ export default function Sidebar() {
     { path: '/customers', icon: Users, label: 'Customers' },
     { path: '/suppliers', icon: Building2, label: 'Suppliers' },
     { path: '/invoices', icon: FileText, label: 'Invoices' },
-    { path: '/imei-lookup', icon: Search, label: 'IMEI Lookup' },
-    { path: '/users', icon: UserCog, label: 'User Management' },
+    { path: '/imei-history', icon: Search, label: 'IMEI Lookup' },
+    { path: '/user-management', icon: UserCog, label: 'User Management' },
   ];
 
   return (
     <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        {!collapsed && <h2 className="text-xl font-bold text-gray-900">Wholesale</h2>}
+        <img 
+          src={theme === 'dark' ? '/logos/udeal-light.png' : '/logos/udeal-dark.png'} 
+          alt="Udeal" 
+          className={collapsed ? "h-8 w-auto object-contain mx-auto" : "h-12 w-auto object-contain"} 
+        />
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
