@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
+import { ThemeProvider } from './context/ThemeContext';
 import DashboardLayout from './components/Layout/DashboardLayout';
 import DashboardHome from './components/Dashboard/DashboardHome';
 import InventoryList from './components/Inventory/InventoryList';
@@ -58,7 +59,8 @@ function DeviceTestWithIMEI() {
 
 function App() {
   return (
-    <AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -78,6 +80,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 
