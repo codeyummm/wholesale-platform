@@ -429,7 +429,6 @@ export default function SalesList() {
         ))}
       </div>
 
-      {/* Search */}
 
       {/* Sales Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
