@@ -64,7 +64,9 @@ export default function SalesList() {
   const [selectedSale, setSelectedSale] = useState(null);
   const [stats, setStats] = useState({ today: {}, thisMonth: {}, allTime: {} });
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
-  const [filters, setFilters] = useState({ search: '', status: '' });
+  const [filters, setFilters] = useState({ search: "", status: "", channel: "", dateFrom: "", dateTo: "" });
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   // Create sale form state
   const [customers, setCustomers] = useState([]);
@@ -428,24 +430,6 @@ export default function SalesList() {
       </div>
 
       {/* Search */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
-          <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-          <input type="text" placeholder="Search sales, tracking #..." value={filters.search}
-            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            onKeyDown={(e) => e.key === 'Enter' && fetchSales()}
-            style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
-        </div>
-        <select value={filters.status} onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-          style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white' }}>
-          <option value="">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
 
       {/* Sales Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
