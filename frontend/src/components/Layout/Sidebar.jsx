@@ -4,12 +4,10 @@ import {
   LayoutDashboard, ShoppingCart, Package, Users, Building2, 
   FileText, Search, UserCog, ChevronLeft, ChevronRight 
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const { theme } = useTheme();
 
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,7 +24,7 @@ export default function Sidebar() {
     <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <img 
-          src={theme === 'dark' ? '/logos/udeal-light.png' : '/logos/udeal-dark.png'} 
+          src="/logos/udeal-dark.png"
           alt="Udeal" 
           className={collapsed ? "h-8 w-auto object-contain mx-auto" : "h-12 w-auto object-contain"} 
         />
@@ -38,7 +36,6 @@ export default function Sidebar() {
           {collapsed ? <ChevronRight className="w-5 h-5 text-gray-600" /> : <ChevronLeft className="w-5 h-5 text-gray-600" />}
         </button>
       </div>
-
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
