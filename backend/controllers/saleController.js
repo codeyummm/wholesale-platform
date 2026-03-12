@@ -30,50 +30,41 @@ exports.updateSaleCustomer = async (req, res) => {
     
     res.json({ success: true, data: sale });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.getSales = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, status, channel, startDate, endDate } = req.query;
+    const { page = 1, limit = 20, search, status, startDate, endDate } = req.query;
     const query = {};
-    
+
     if (search) {
       query.$or = [
         { saleNumber: { $regex: search, $options: 'i' } },
         { customerName: { $regex: search, $options: 'i' } },
-        { 'shipping.trackingNumber': { $regex: search, $options: 'i' } },
         { salesChannel: { $regex: search, $options: 'i' } },
         { status: { $regex: search, $options: 'i' } },
         { 'items.imei': { $regex: search, $options: 'i' } },
         { 'items.brand': { $regex: search, $options: 'i' } },
-        { 'items.model': { $regex: search, $options: 'i' } }
+        { 'items.model': { $regex: search, $options: 'i' } },
+        { 'shipping.trackingNumber': { $regex: search, $options: 'i' } }
       ];
     }
-    
-    if (status) query.status = status;
     if (channel) query.salesChannel = channel;
-    
+    if (status) query.status = status;
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
       if (endDate) query.createdAt.$lte = new Date(endDate + 'T23:59:59');
     }
-    
+
     const sales = await Sale.find(query)
       .populate('customer', 'name company contact')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
-    
-    const total = await Sale.countDocuments(query);
-    
-    res.json({
-      success: true,
-      data: sales,
-      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+
     const total = await Sale.countDocuments(query);
 
     res.json({
