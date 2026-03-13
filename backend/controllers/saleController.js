@@ -36,7 +36,7 @@ exports.updateSaleCustomer = async (req, res) => {
 
 exports.getSales = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, status, startDate, endDate } = req.query;
+    const { page = 1, limit = 20, search, status, channel, startDate, endDate } = req.query;
     const query = {};
 
     if (search) {
