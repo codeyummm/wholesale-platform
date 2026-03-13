@@ -108,6 +108,7 @@ export default function SalesList() {
       let url = `/sales?page=${pagination.page}&limit=${pagination.limit}`;
       if (filters.search) url += `&search=${filters.search}`;
       if (filters.status) url += `&status=${filters.status}`;
+      if (filters.channel) url += `&channel=${filters.channel}`;
       const res = await api.get(url);
       if (res.data.success) {
         setSales(res.data.data);
