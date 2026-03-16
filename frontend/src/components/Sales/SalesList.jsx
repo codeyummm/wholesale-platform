@@ -48,8 +48,8 @@ function getCarrierTrackingUrl(carrier, tracking) {
 const carrierLabels = { 'ups': 'UPS', 'usps': 'USPS', 'fedex': 'FedEx', 'dhl': 'DHL', 'amazon': 'Amazon', 'ontrac': 'OnTrac', 'lasership': 'LaserShip', 'other': 'Other' };
 const carrierColors = { usps: '#004B87', ups: '#351C15', fedex: '#4D148C', dhl: '#FFCC00', amazon: '#FF9900', ontrac: '#0072CE', lasership: '#00AA4F', other: '#64748b' };
 
-const channelLabels = { in_store: 'In-Store', online: 'Online', wholesale: 'Wholesale', marketplace: 'Marketplace', phone: 'Phone Order', other: 'Other' };
-const channelColors = { in_store: { bg: '#ecfdf5', color: '#059669' }, online: { bg: '#eef2ff', color: '#4338ca' }, wholesale: { bg: '#fef3c7', color: '#b45309' }, marketplace: { bg: '#f5f3ff', color: '#7c3aed' }, phone: { bg: '#fce7f3', color: '#be185d' }, other: { bg: '#f1f5f9', color: '#475569' } };
+const channelLabels = { in_store: 'In-Store', online: 'Online', ebay: 'eBay', amazon: 'Amazon', walmart: 'Walmart', etsy: 'Etsy', facebook: 'Facebook Marketplace', mercari: 'Mercari', offerup: 'OfferUp', wholesale: 'Wholesale', phone: 'Phone Order', other: 'Other' };
+const channelColors = { in_store: { bg: '#ecfdf5', color: '#059669' }, online: { bg: '#eef2ff', color: '#4338ca' }, ebay: { bg: '#fef9c3', color: '#ca8a04' }, amazon: { bg: '#ffedd5', color: '#ea580c' }, walmart: { bg: '#dbeafe', color: '#0284c7' }, etsy: { bg: '#fce7f3', color: '#db2777' }, facebook: { bg: '#ede9fe', color: '#7c3aed' }, mercari: { bg: '#fecaca', color: '#dc2626' }, offerup: { bg: '#d1fae5', color: '#059669' }, wholesale: { bg: '#fef3c7', color: '#b45309' }, phone: { bg: '#fce7f3', color: '#be185d' }, other: { bg: '#f1f5f9', color: '#475569' } };
 
 const lbl = { display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '3px', color: '#64748b' };
 const inp = { width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px' };
@@ -475,9 +475,16 @@ export default function SalesList() {
           <option value="">All Channels</option>
           <option value="in_store">In-Store</option>
           <option value="online">Online</option>
+          <option value="ebay">eBay</option>
+          <option value="amazon">Amazon</option>
+          <option value="walmart">Walmart</option>
+          <option value="etsy">Etsy</option>
+          <option value="facebook">Facebook Marketplace</option>
+          <option value="mercari">Mercari</option>
+          <option value="offerup">OfferUp</option>
           <option value="wholesale">Wholesale</option>
-          <option value="marketplace">Marketplace</option>
           <option value="phone">Phone Order</option>
+          <option value="other">Other</option>
         </select>
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", minWidth: "140px" }}>
           <option value="date">Sort by Date</option>
@@ -598,8 +605,14 @@ export default function SalesList() {
                 <select value={saleForm.salesChannel} onChange={(e) => setSaleForm(prev => ({ ...prev, salesChannel: e.target.value }))} style={sel}>
                   <option value="in_store">In-Store</option>
                   <option value="online">Online</option>
+                  <option value="ebay">eBay</option>
+                  <option value="amazon">Amazon</option>
+                  <option value="walmart">Walmart</option>
+                  <option value="etsy">Etsy</option>
+                  <option value="facebook">Facebook Marketplace</option>
+                  <option value="mercari">Mercari</option>
+                  <option value="offerup">OfferUp</option>
                   <option value="wholesale">Wholesale</option>
-                  <option value="marketplace">Marketplace</option>
                   <option value="phone">Phone Order</option>
                   <option value="other">Other</option>
                 </select>
