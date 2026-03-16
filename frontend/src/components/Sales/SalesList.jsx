@@ -90,15 +90,40 @@ export default function SalesList() {
   const hasAutoOpened = useRef(false);
   useEffect(() => { if (selectedSale) console.log("📊 Selected Sale:", selectedSale); }, [selectedSale]);
 
-  useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status]);
+  useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status, filters.channel, sortBy, sortOrder]);
+
+  const sortSales = (salesData) => {
+    return [...salesData].sort((a, b) => {
+      let aVal, bVal;
+      switch(sortBy) {
+        case "amount":
+          aVal = a.totalAmount || 0;
+          bVal = b.totalAmount || 0;
+          break;
+        case "profit":
+          aVal = a.totalProfit || 0;
+          bVal = b.totalProfit || 0;
+          break;
+        case "customer":
+          aVal = (a.customerName || "").toLowerCase();
+          bVal = (b.customerName || "").toLowerCase();
+          break;
+        case "date":
+        default:
+          aVal = new Date(a.createdAt);
+          bVal = new Date(b.createdAt);
+      }
+      if (sortOrder === "asc") return aVal > bVal ? 1 : -1;
+      return aVal < bVal ? 1 : -1;
+    });
+  };
 
   // Auto-open create modal when customerId param exists
   useEffect(() => {
     const customerId = searchParams.get('customerId');
     const openModal = searchParams.get('openModal');
     if (customerId && openModal === 'true' && !hasAutoOpened.current) {
-      hasAutoOpened.current = true;
-      openCreateModal();
+
     }
   }, [searchParams]);
 
@@ -111,7 +136,7 @@ export default function SalesList() {
       if (filters.channel) url += `&channel=${filters.channel}`;
       const res = await api.get(url);
       if (res.data.success) {
-        setSales(res.data.data);
+        setSales(sortSales(res.data.data));
         setPagination(prev => ({ ...prev, ...res.data.pagination }));
       }
     } catch (err) { console.error(err); }
@@ -446,6 +471,23 @@ export default function SalesList() {
           <option value="delivered">Delivered</option>
           <option value="cancelled">Cancelled</option>
         </select>
+        <select value={filters.channel} onChange={(e) => setFilters(prev => ({ ...prev, channel: e.target.value }))} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", minWidth: "140px" }}>
+          <option value="">All Channels</option>
+          <option value="in_store">In-Store</option>
+          <option value="online">Online</option>
+          <option value="wholesale">Wholesale</option>
+          <option value="marketplace">Marketplace</option>
+          <option value="phone">Phone Order</option>
+        </select>
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", minWidth: "140px" }}>
+          <option value="date">Sort by Date</option>
+          <option value="amount">Sort by Amount</option>
+          <option value="profit">Sort by Profit</option>
+          <option value="customer">Sort by Customer</option>
+        </select>
+        <button onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", cursor: "pointer", fontWeight: "500" }}>
+          {sortOrder === "asc" ? "↑ Asc" : "↓ Desc"}
+        </button>
       </div>
 
 
