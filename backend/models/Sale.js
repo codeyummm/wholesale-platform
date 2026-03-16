@@ -43,7 +43,7 @@ const saleSchema = new mongoose.Schema({
   // Sales Channel
   salesChannel: {
     type: String,
-    enum: ['in_store', 'online', 'wholesale', 'marketplace', 'phone', 'other'],
+    enum: ['in_store', 'online', 'ebay', 'amazon', 'walmart', 'etsy', 'facebook', 'mercari', 'offerup', 'wholesale', 'phone', 'other'],
     default: 'in_store'
   },
   // Shipping Information
