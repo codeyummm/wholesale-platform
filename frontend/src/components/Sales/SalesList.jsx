@@ -136,8 +136,6 @@ export default function SalesList() {
       if (filters.channel) url += `&channel=${filters.channel}`;
       if (filters.dateFrom) url += `&startDate=${filters.dateFrom}`;
       if (filters.dateTo) url += `&endDate=${filters.dateTo}`;
-      if (filters.dateFrom) url += `&startDate=${filters.dateFrom}`;
-      if (filters.dateTo) url += `&endDate=${filters.dateTo}`;
       const res = await api.get(url);
       if (res.data.success) {
         setSales(sortSales(res.data.data));
