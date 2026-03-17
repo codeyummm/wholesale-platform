@@ -90,7 +90,7 @@ export default function SalesList() {
   const hasAutoOpened = useRef(false);
   useEffect(() => { if (selectedSale) console.log("📊 Selected Sale:", selectedSale); }, [selectedSale]);
 
-  useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status, filters.channel, sortBy, sortOrder]);
+  useEffect(() => { fetchSales(); fetchStats(); }, [pagination.page, filters.status, filters.channel, filters.dateFrom, filters.dateTo, sortBy, sortOrder]);
 
   const sortSales = (salesData) => {
     return [...salesData].sort((a, b) => {
@@ -134,6 +134,10 @@ export default function SalesList() {
       if (filters.search) url += `&search=${filters.search}`;
       if (filters.status) url += `&status=${filters.status}`;
       if (filters.channel) url += `&channel=${filters.channel}`;
+      if (filters.dateFrom) url += `&startDate=${filters.dateFrom}`;
+      if (filters.dateTo) url += `&endDate=${filters.dateTo}`;
+      if (filters.dateFrom) url += `&startDate=${filters.dateFrom}`;
+      if (filters.dateTo) url += `&endDate=${filters.dateTo}`;
       const res = await api.get(url);
       if (res.data.success) {
         setSales(sortSales(res.data.data));
@@ -495,6 +499,8 @@ export default function SalesList() {
         <button onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", cursor: "pointer", fontWeight: "500" }}>
           {sortOrder === "asc" ? "↑ Asc" : "↓ Desc"}
         </button>
+        <input type="date" value={filters.dateFrom} onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white" }} placeholder="From Date" />
+        <input type="date" value={filters.dateTo} onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white" }} placeholder="To Date" />
       </div>
 
 
