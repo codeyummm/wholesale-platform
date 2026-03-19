@@ -5,7 +5,7 @@ import SaleScanner from '../SaleScanner';
 import {
   Plus, Search, Camera, Trash2, ChevronLeft, ChevronRight, Loader2,
   ShoppingCart, DollarSign, TrendingUp, X, Save, Smartphone,
-  Receipt, Eye, Calendar, Filter, Truck, Package, MapPin, Copy, ExternalLink
+  Receipt, Edit2, Eye, Calendar, Filter, Truck, Package, MapPin, Copy, ExternalLink
 } from 'lucide-react';
 
 // Auto-detect carrier from tracking number
@@ -364,7 +364,7 @@ export default function SalesList() {
       console.log("📦 Full payload being sent:", JSON.stringify(payload, null, 2));
       console.log('📤 customerId:', saleForm.customerId);
       if (!showShipping) { payload.shipping = { shippingCost: saleForm.shipping?.shippingCost || 0 }; }
-      const res = await api.post('/sales', payload);
+      const res = editingId ? await api.put(`/sales/${editingId}`, payload) : await api.post('/sales', payload);
       console.log("🔍 Backend response:", res.data);
       console.log("🔍 res.data.success:", res.data.success);
       if (res.data.success) {
@@ -388,13 +388,37 @@ export default function SalesList() {
             }
           }
         }
-        setShowCreateModal(false); fetchSales(); fetchStats();
-        alert("Sale created successfully!");
+        setShowCreateModal(false); setEditingId(null); fetchSales(); fetchStats();
+        alert(editingId ? "Sale updated successfully!" : "Sale created successfully!");
         alert('Sale created successfully!');
       }
     } catch (err) {
       alert('Failed: ' + (err.response?.data?.message || err.message));
     }
+  };
+
+  const handleEditSale = async (id) => {
+    try {
+      const res = await api.get(`/sales/${id}`);
+      if (res.data.success) {
+        const sale = res.data.data;
+        setSaleForm({
+          customerId: sale.customer?._id || "",
+          customerName: sale.customerName,
+          items: sale.items,
+          discount: sale.discount || 0,
+          tax: sale.tax || 0,
+          paymentMethod: sale.paymentMethod,
+          paymentStatus: sale.paymentStatus,
+          notes: sale.notes || "",
+          salesChannel: sale.salesChannel,
+          shipping: sale.shipping || { trackingNumber: "", carrier: "", shippingMethod: "", shippingCost: 0, address: { name: "", street: "", city: "", state: "", zipCode: "", country: "USA", phone: "" } },
+          costs: sale.costs || { handling: 0, packaging: 0, marketplaceFees: 0, other: 0 }
+        });
+        setEditingId(id);
+        setShowCreateModal(true);
+      }
+    } catch (err) { console.error(err); }
   };
 
   const handleDeleteSale = async (id) => {
@@ -557,6 +581,7 @@ export default function SalesList() {
                       <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                           <button onClick={() => viewSaleDetail(sale._id)} style={{ padding: '6px', background: '#eef2ff', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="View"><Eye size={15} color="#4338ca" /></button>
+                          <button onClick={() => handleEditSale(sale._id)} style={{ padding: "6px", background: "#fef3c7", border: "none", borderRadius: "6px", cursor: "pointer" }} title="Edit"><Edit2 size={15} color="#b45309" /></button>
                           <button onClick={() => handleDeleteSale(sale._id)} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Delete"><Trash2 size={15} color="#dc2626" /></button>
                         </div>
                       </td>
@@ -586,7 +611,7 @@ export default function SalesList() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '12px', padding: '28px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>Create New Sale</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>{editingId ? "Edit Sale" : "Create New Sale"}</h2>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <button onClick={() => setShowSaleScanner(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
                   <Camera size={16} /> Scan Sale
