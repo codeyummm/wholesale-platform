@@ -59,6 +59,7 @@ export default function SalesList() {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [showSaleScanner, setShowSaleScanner] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
