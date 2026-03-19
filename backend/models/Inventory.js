@@ -23,6 +23,7 @@ const inventorySchema = new mongoose.Schema({
     grade: { type: String, default: 'Grade 5' },
     isSold: { type: Boolean, default: false },
     soldDate: Date,
+    history: [{
       action: { type: String, required: true },
       date: { type: Date, default: Date.now },
       details: { type: String },
