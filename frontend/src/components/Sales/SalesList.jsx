@@ -1112,6 +1112,21 @@ export default function SalesList() {
                 <div><span style={{ fontSize: '11px', color: '#64748b' }}>Payment</span><div style={{ fontWeight: '600', textTransform: 'capitalize' }}>{selectedSale.paymentMethod?.replace('_', ' ')}</div></div>
                 <div><span style={{ fontSize: '11px', color: '#64748b' }}>Status</span><div style={{ fontWeight: '600', color: '#10b981', textTransform: 'capitalize' }}>{selectedSale.status}</div></div>
               </div>
+            {/* Edit History */}
+            {selectedSale.editHistory && selectedSale.editHistory.length > 0 && (
+              <div style={{ background: '#fef3c7', borderRadius: '8px', padding: '14px', marginTop: '16px', border: '1px solid #fcd34d' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '10px' }}>Edit History</div>
+                {selectedSale.editHistory.map((edit, idx) => (
+                  <div key={idx} style={{ padding: '8px', background: 'white', borderRadius: '6px', marginBottom: '6px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                      <span style={{ fontWeight: '600', color: '#0f172a' }}>{edit.editedBy}</span>
+                      <span style={{ color: '#64748b', fontSize: '11px' }}>{new Date(edit.editedAt).toLocaleString()}</span>
+                    </div>
+                    <div style={{ color: '#64748b' }}>{edit.changes}</div>
+                  </div>
+                ))}
+              </div>
+            )}
             </div>
 
             <button onClick={() => setShowDetailModal(false)}
