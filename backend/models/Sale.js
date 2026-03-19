@@ -78,7 +78,12 @@ const saleSchema = new mongoose.Schema({
     other: { type: Number, default: 0 }
   },
   notes: String,
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  editHistory: [{
+    editedBy: { type: String },
+    editedAt: { type: Date, default: Date.now },
+    changes: { type: String }
+  }],
 }, { timestamps: true });
 
 // Auto-generate sale number + calculate totals
