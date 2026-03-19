@@ -22,7 +22,12 @@ const inventorySchema = new mongoose.Schema({
     },
     grade: { type: String, default: 'Grade 5' },
     isSold: { type: Boolean, default: false },
-    soldDate: Date
+    soldDate: Date,
+      action: { type: String, required: true },
+      date: { type: Date, default: Date.now },
+      details: { type: String },
+      user: { type: String }
+    }]
   }],
   barcode: { type: String, sparse: true },
   lowStockThreshold: { type: Number, default: 10 },

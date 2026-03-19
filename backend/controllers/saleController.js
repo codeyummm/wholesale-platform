@@ -183,10 +183,31 @@ exports.updateSale = async (req, res) => {
     
     const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     
+    // Update IMEI history for all items in the sale
+    const Inventory = require('../models/Inventory');
+    for (const item of sale.items) {
+      if (item.imei) {
+        await Inventory.updateOne(
+          { 'devices.imei': item.imei },
+          { 
+            $push: { 
+              'devices.$.history': {
+                action: 'Sale Edited',
+                date: new Date(),
+                details: `Sale #${sale.saleNumber} updated by ${req.user?.name || 'System'}`,
+                user: req.user?.name || 'System'
+              }
+            }
+          }
+        );
+      }
+    }
+    
     res.json({ success: true, data: sale });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
+};
 };
 
 exports.deleteSale = async (req, res) => {
