@@ -470,3 +470,4 @@ export default function InventoryList() {
     </div>
   );
 }
+export default InventoryList;
