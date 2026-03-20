@@ -90,7 +90,6 @@ export default function InventoryList() {
       }
     } catch (err) { console.error(err); }
   };
-  };
 
   const handleUpdateDevice = async () => {
     try {
