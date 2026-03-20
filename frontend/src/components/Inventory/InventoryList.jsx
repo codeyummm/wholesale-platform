@@ -10,6 +10,8 @@ export default function InventoryList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showDeviceHistory, setShowDeviceHistory] = useState(false);
+  const [selectedDeviceHistory, setSelectedDeviceHistory] = useState(null);
   const [showScanModal, setShowScanModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeviceEditModal, setShowDeviceEditModal] = useState(false);
@@ -78,6 +80,16 @@ export default function InventoryList() {
     setEditDeviceIndex(deviceIndex);
     setEditItem(inventoryItem);
     setShowDeviceEditModal(true);
+  const handleViewDeviceHistory = async (inventoryId, device) => {
+    try {
+      const res = await api.get(`/inventory/${inventoryId}`);
+      if (res.data.success) {
+        const foundDevice = res.data.data.devices.find(d => d.imei === device.imei);
+        setSelectedDeviceHistory({ ...foundDevice, inventoryId, brand: res.data.data.brand, model: res.data.data.model });
+        setShowDeviceHistory(true);
+      }
+    } catch (err) { console.error(err); }
+  };
   };
 
   const handleUpdateDevice = async () => {
@@ -241,6 +253,7 @@ export default function InventoryList() {
                                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button onClick={() => handleEditDevice(item._id, device, idx, item)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '500' }}><Edit size={14} /> Edit</button>
                                         <button onClick={() => handlePrintLabel(device, item)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '500' }}><Printer size={14} /> Print Label</button>
+                                        <button onClick={() => handleViewDeviceHistory(item._id, device)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", padding: "6px 10px", background: "#fef3c7", border: "1px solid #fcd34d", color: "#92400e", borderRadius: "6px", cursor: "pointer", fontSize: "0.75rem", fontWeight: "500" }}>📜 History</button>
                                       </div>
                                     </div>
                                   ))}
@@ -406,6 +419,54 @@ export default function InventoryList() {
           </div>
         )}
       </div>
+        {showDeviceHistory && selectedDeviceHistory && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+            <div style={{ background: 'white', borderRadius: '12px', padding: '28px', maxWidth: '600px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', margin: '0 0 4px' }}>Device History</h2>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#64748b', fontFamily: 'monospace' }}>{selectedDeviceHistory.brand} {selectedDeviceHistory.model} - {selectedDeviceHistory.imei}</p>
+                </div>
+                <button onClick={() => setShowDeviceHistory(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px' }}>×</button>
+              </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>Current Status</div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', background: selectedDeviceHistory.isSold ? '#fee2e2' : '#d1fae5', color: selectedDeviceHistory.isSold ? '#991b1b' : '#065f46' }}>
+                    {selectedDeviceHistory.isSold ? 'Sold' : 'Available'}
+                  </span>
+                  <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', background: '#f3f4f6', color: '#374151' }}>{selectedDeviceHistory.condition}</span>
+                  <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', background: '#f3f4f6', color: '#374151' }}>{electedDeviceHistory.unlockStatus}</span>
+                  <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', background: '#f3f4f6', color: '#374151' }}>{selectedDeviceHistory.grade}</span>
+                </div>
+              </div>
+              
+              {selectedDeviceHistory.history && selectedDeviceHistory.history.length > 0 ? (
+                <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '12px' }}>Journey Timeline</div>
+                  {selectedDeviceHistory.history.map((entry, idx) => (
+                    <div key={idx} style={{ padding: '12px', background: 'white', borderRadius: '8px', marginBottom: '8px', borderLeft: '3px solid #3b82f6' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>{entry.action}</span>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>{new Date(entry.date).toLocaleString()}</span>
+                      </div>
+                      {entry.details && <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>{entry.details}</div>}
+                      {entry.user && <div style={{ fontSize: '11px', color: '#94a3b8' }}>by {entry.user}</div>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: '32px', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '14px', color: '#64748b' }}>No history entries yet</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>History will appear when this device is sold or edited</div>
+                </div>
+              )}
+              
+              <button onClick={() => setShowDeviceHistory(false)} style={{ marginTop: '16px', width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Close</button>
+            </div>
+          </div>
+        )}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
