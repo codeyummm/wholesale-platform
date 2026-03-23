@@ -80,6 +80,7 @@ export default function InventoryList() {
     setEditDeviceIndex(deviceIndex);
     setEditItem(inventoryItem);
     setShowDeviceEditModal(true);
+  };
   const handleViewDeviceHistory = async (inventoryId, device) => {
     try {
       const res = await api.get(`/inventory/${inventoryId}`);
