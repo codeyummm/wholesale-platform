@@ -176,6 +176,7 @@ exports.updateSale = async (req, res) => {
     // Track detailed changes
     const changes = [];
     
+    // Basic sale info
     if (req.body.salesChannel && req.body.salesChannel !== oldSale.salesChannel) {
       changes.push(`Channel: ${oldSale.salesChannel} → ${req.body.salesChannel}`);
     }
@@ -185,14 +186,58 @@ exports.updateSale = async (req, res) => {
     if (req.body.status && req.body.status !== oldSale.status) {
       changes.push(`Status: ${oldSale.status} → ${req.body.status}`);
     }
-    if (req.body.shipping?.shippingCost && req.body.shipping.shippingCost !== oldSale.shipping?.shippingCost) {
-      changes.push(`Shipping: $${oldSale.shipping?.shippingCost || 0} → $${req.body.shipping.shippingCost}`);
+    
+    // Shipping details
+    if (req.body.shipping?.shippingCost !== undefined && req.body.shipping.shippingCost !== oldSale.shipping?.shippingCost) {
+      changes.push(`Shipping Cost: $${oldSale.shipping?.shippingCost || 0} → $${req.body.shipping.shippingCost}`);
     }
-    if (req.body.shipping?.trackingNumber && req.body.shipping.trackingNumber !== oldSale.shipping?.trackingNumber) {
+    if (req.body.shipping?.trackingNumber && req.body.shipping.trackingNumber !== oldSale.shtrackingNumber) {
       changes.push(`Tracking: ${oldSale.shipping?.trackingNumber || 'None'} → ${req.body.shipping.trackingNumber}`);
     }
+    if (req.body.shipping?.carrier && req.body.shipping.carrier !== oldSale.shipping?.carrier) {
+      changes.push(`Carrier: ${oldSale.shipping?.carrier || 'None'} → ${req.body.shipping.carrier}`);
+    }
+    if (req.body.shipping?.address?.name && req.body.shipping.address.name !== oldSale.shipping?.address?.name) {
+      changes.push(`Ship To: ${oldSale.shipping?.address?.name || 'None'} → ${req.body.shipping.address.name}`);
+    }
+    if (req.body.shipping?.address?.street && req.body.shipping.address.street !== oldSale.shipping?.address?.street) {
+      changes.push(`Address: ${oldSale.shipping?.address?.street || 'None'} → ${req.body.shipping.address.street}`);
+    }
+    
+    // Costs
+    if (req.body.costs?.marketplaceFees !== undefined && req.body.costs.marketplaceFees !== oldSale.costs?.marketplaceFees) {
+      changes.push(`Marketplace Fees: $${oldSalemarketplaceFees || 0} → $${req.body.costs.marketplaceFees}`);
+    }
+    if (req.body.costs?.handling !== undefined && req.body.costs.handling !== oldSale.costs?.handling) {
+      changes.push(`Handling: $${oldSale.costs?.handling || 0} → $${req.body.costs.handling}`);
+    }
+    if (req.body.costs?.packaging !== undefined && req.body.costs.packaging !== oldSale.costs?.packaging) {
+      changes.push(`Packaging: $${oldSale.costs?.packaging || 0} → $${req.body.costs.packaging}`);
+    }
+    if (req.body.costs?.other !== undefined && req.body.costs.other !== oldSale.costs?.other) {
+      changes.push(`Other Costs: $${oldSale.costs?.other || 0} → $${req.body.costs.other}`);
+    }
+    
+    // Payment
+    if (req.body.paymentMethod && req.body.paymentMethod !== oldSale.paymentMethod) {
+      changes.push(`Payment Method: ${oldSale.paymentMethod} → ${req.body.paymentMethod}`);
+    }
+    if (req.body.paymentStatus && req.body.paymentStatus !== oldSale.paymentStatus) {
+      changes.push(`Payment Status: ${omentStatus} → ${req.body.paymentStatus}`);
+    }
+    
+    // Discount & Tax
     if (req.body.discount !== undefined && req.body.discount !== oldSale.discount) {
       changes.push(`Discount: $${oldSale.discount || 0} → $${req.body.discount}`);
+    }
+    if (req.body.tax !== undefined && req.body.tax !== oldSale.tax) {
+      changes.push(`Tax: $${oldSale.tax || 0} → $${req.body.tax}`);
+    }
+    
+    // Notes
+    if (req.body.notes && req.body.notes !== oldSale.notes) {
+      changes.push(`Notes updated`);
+    }
     }
     
     const changesSummary = changes.length > 0 ? changes.join(', ') : 'Sale details updated';
