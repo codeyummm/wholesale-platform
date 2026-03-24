@@ -437,7 +437,7 @@ export default function InventoryList() {
                     {selectedDeviceHistory.isSold ? 'Sold' : 'Available'}
                   </span>
                   <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', background: '#f3f4f6', color: '#374151' }}>{selectedDeviceHistory.condition}</span>
-                  <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', background: '#f3f4f6', color: '#374151' }}>{electedDeviceHistory.unlockStatus}</span>
+                  <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', background: '#f3f4f6', color: '#374151' }}>{selectedDeviceHistory.unlockStatus}</span>
                   <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '12px', background: '#f3f4f6', color: '#374151' }}>{selectedDeviceHistory.grade}</span>
                 </div>
               </div>
