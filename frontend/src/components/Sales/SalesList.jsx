@@ -364,7 +364,7 @@ export default function SalesList() {
       const payload = { ...saleForm, amountPaid: getTotal() };
       console.log("📦 Full payload being sent:", JSON.stringify(payload, null, 2));
       console.log('📤 customerId:', saleForm.customerId);
-      if (!showShipping) { payload.shipping = { shippingCost: saleForm.shipping?.shippingCost || 0 }; }
+      if (!showShipping && !editingId) { payload.shipping = { shippingCost: saleForm.shipping?.shippingCost || 0 }; }
       const res = editingId ? await api.put(`/sales/${editingId}`, payload) : await api.post('/sales', payload);
       console.log("🔍 Backend response:", res.data);
       console.log("🔍 res.data.success:", res.data.success);
@@ -391,6 +391,7 @@ export default function SalesList() {
         }
         setShowCreateModal(false); setEditingId(null); fetchSales(); fetchStats();
         alert(editingId ? "Sale updated successfully!" : "Sale created successfully!");
+        if (selectedSale) viewSaleDetail(editingId || selectedSale._id);
         alert('Sale created successfully!');
       }
     } catch (err) {
