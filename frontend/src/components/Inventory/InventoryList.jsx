@@ -83,7 +83,7 @@ export default function InventoryList() {
   };
   const handleViewDeviceHistory = async (inventoryId, device) => {
     try {
-      const res = await api.get(`/inventory/${inventoryId}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/inventory/${inventoryId}`);
       if (res.data.success) {
         const foundDevice = res.data.data.devices.find(d => d.imei === device.imei);
         setSelectedDeviceHistory({ ...foundDevice, inventoryId, brand: res.data.data.brand, model: res.data.data.model });
