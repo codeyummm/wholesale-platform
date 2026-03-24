@@ -191,7 +191,7 @@ exports.updateSale = async (req, res) => {
     if (req.body.shipping?.shippingCost !== undefined && req.body.shipping.shippingCost !== oldSale.shipping?.shippingCost) {
       changes.push(`Shipping Cost: $${oldSale.shipping?.shippingCost || 0} → $${req.body.shipping.shippingCost}`);
     }
-    if (req.body.shipping?.trackingNumber && req.body.shipping.trackingNumber !== oldSale.shtrackingNumber) {
+    if (req.body.shipping?.trackingNumber && req.body.shipping.trackingNumber !== oldSale.shipping?.trackingNumber) {
       changes.push(`Tracking: ${oldSale.shipping?.trackingNumber || 'None'} → ${req.body.shipping.trackingNumber}`);
     }
     if (req.body.shipping?.carrier && req.body.shipping.carrier !== oldSale.shipping?.carrier) {
