@@ -174,6 +174,37 @@ exports.updateSale = async (req, res) => {
     if (!oldSale) return res.status(404).json({ success: false, message: 'Sale not found' });
     
     // Track detailed changes
+    // Recalculate totals
+    if (req.body.items) {
+      req.body.subtotal = req.body.items.reduce((sum, item) => sum + (item.salePrice || 0), 0);
+      req.body.totalAmount = req.body.subtotal - (req.body.discount || 0) + (req.body.tax || 0);
+      
+      const totalCost = req.body.items.reduce((sum, item) => sum + (item.costPrice || 0), 0);
+      const grossProfit = req.body.subtotal - totalCost;
+      const totalExpenses = (req.body.costs?.marketplaceFees || 0) + 
+                           (req.body.costs?.handling || 0) + 
+                           (req.body.costs?.packaging || 0) + 
+                           (req.body.costs?.other || 0) + 
+                           (req.body.shipping?.shippingCost || 0);
+      req.body.totalProfit = grossProfit - totalExpenses - (req.body.discount || 0);
+    }
+
+    // Recalculate totals
+    if (req.body.items) {
+      req.body.subtotal = req.body.items.reduce((sum, item) => sum + (item.salePrice || 0), 0);
+      req.body.totalAmount = req.body.subtotal - (req.body.discount || 0) + (req.body.tax || 0);
+      
+      const totalCost = req.body.items.reduce((sum, item) => sum + (item.costPrice || 0), 0);
+      const grossProfit = req.body.subtotal - totalCost;
+      const totalExpenses = (req.body.costs?.marketplaceFees || 0) + 
+                           (req.body.costs?.handling || 0) + 
+                           (req.body.costs?.packaging || 0) + 
+                           (req.body.costs?.other || 0) + 
+                           (req.body.shipping?.shippingCost || 0);
+      req.body.totalProfit = grossProfit - totalExpenses - (req.body.discount || 0);
+    }
+
+
     const changes = [];
     
     // Basic sale info
@@ -234,20 +265,6 @@ exports.updateSale = async (req, res) => {
       changes.push(`Discount: $${oldSale.discount || 0} → $${req.body.discount}`);
     }
     if (req.body.tax !== undefined && req.body.tax !== oldSale.tax) {
-      changes.push(`Tax: $${oldSale.tax || 0} → $${req.body.tax}`);
-    }
-    
-    // Notes
-    if (req.body.notes && req.body.notes !== oldSale.notes) {
-      changes.push(`Notes updated`);
-    }
-    const changesSummary = changes.length > 0 ? changes.join(', ') : 'Sale details updated';
-    
-    const editEntry = {
-      editedBy: req.user?.name || 'System',
-      editedAt: new Date(),
-      changes: changesSummary
-    };
     
     
     // Recalculate totals
