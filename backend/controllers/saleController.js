@@ -238,8 +238,6 @@ exports.updateSale = async (req, res) => {
     if (req.body.notes && req.body.notes !== oldSale.notes) {
       changes.push(`Notes updated`);
     }
-    }
-    
     const changesSummary = changes.length > 0 ? changes.join(', ') : 'Sale details updated';
     
     const editEntry = {
