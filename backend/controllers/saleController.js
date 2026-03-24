@@ -180,6 +180,9 @@ exports.updateSale = async (req, res) => {
     if (req.body.salesChannel && req.body.salesChannel !== oldSale.salesChannel) {
       changes.push(`Channel: ${oldSale.salesChannel} → ${req.body.salesChannel}`);
     }
+    if (req.body.subtotal && req.body.subtotal !== oldSale.subtotal) {
+      changes.push(`Sale Price: $${oldSale.subtotal} → $${req.body.subtotal}`);
+    }
     if (req.body.totalAmount && req.body.totalAmount !== oldSale.totalAmount) {
       changes.push(`Total: $${oldSale.totalAmount} → $${req.body.totalAmount}`);
     }
@@ -246,6 +249,21 @@ exports.updateSale = async (req, res) => {
       changes: changesSummary
     };
     
+    
+    // Recalculate totals
+    if (req.body.items) {
+      req.body.subtotal = req.body.items.reduce((sum, item) => sum + (item.salePrice || 0), 0);
+      req.body.totalAmount = req.body.subtotal - (req.body.discount || 0) + (req.body.tax || 0);
+      
+      const totalCost = req.body.items.reduce((sum, item) => sum + (item.costPrice || 0), 0);
+      const grossProfit = req.body.subtotal - totalCost;
+      const totalExpenses = (req.body.costs?.marketplaceFees || 0) + 
+                           (req.body.costs?.handling || 0) + 
+                           (req.body.costs?.packaging || 0) + 
+                           (req.body.costs?.other || 0) + 
+                           (req.body.shipping?.shippingCost || 0);
+      req.body.totalProfit = grossProfit - totalExpenses - (req.body.discount || 0);
+    }
 
     await Sale.findByIdAndUpdate(req.params.id, { $push: { editHistory: editEntry } });
     const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
