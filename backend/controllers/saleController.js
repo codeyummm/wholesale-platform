@@ -186,7 +186,7 @@ exports.updateSale = async (req, res) => {
       changes.push(`Status: ${oldSale.status} → ${req.body.status}`);
     }
     if (req.body.shipping?.shippingCost && req.body.shipping.shippingCost !== oldSale.shipping?.shippingCost) {
-      changes.push(`Shipping: $${oldhipping?.shippingCost || 0} → $${req.body.shipping.shippingCost}`);
+      changes.push(`Shipping: $${oldSale.shipping?.shippingCost || 0} → $${req.body.shipping.shippingCost}`);
     }
     if (req.body.shipping?.trackingNumber && req.body.shipping.trackingNumber !== oldSale.shipping?.trackingNumber) {
       changes.push(`Tracking: ${oldSale.shipping?.trackingNumber || 'None'} → ${req.body.shipping.trackingNumber}`);
@@ -203,13 +203,13 @@ exports.updateSale = async (req, res) => {
       changes: changesSummary
     };
     
-    req.body.$push = { editHistory: editEntry };
-    
+
+    await Sale.findByIdAndUpdate(req.params.id, { $push: { editHistory: editEntry } });
     const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     
     // Update IMEI history for all items in the sale
     const Inventory = require('../models/Inventory');
-    for (conm of sale.items) {
+    for (const item of sale.items) {
       if (item.imei) {
         await Inventory.updateOne(
           { 'devices.imei': item.imei },
