@@ -173,10 +173,34 @@ exports.updateSale = async (req, res) => {
     const oldSale = await Sale.findById(req.params.id);
     if (!oldSale) return res.status(404).json({ success: false, message: 'Sale not found' });
     
+    // Track detailed changes
+    const changes = [];
+    
+    if (req.body.salesChannel && req.body.salesChannel !== oldSale.salesChannel) {
+      changes.push(`Channel: ${oldSale.salesChannel} → ${req.body.salesChannel}`);
+    }
+    if (req.body.totalAmount && req.body.totalAmount !== oldSale.totalAmount) {
+      changes.push(`Total: $${oldSale.totalAmount} → $${req.body.totalAmount}`);
+    }
+    if (req.body.status && req.body.status !== oldSale.status) {
+      changes.push(`Status: ${oldSale.status} → ${req.body.status}`);
+    }
+    if (req.body.shipping?.shippingCost && req.body.shipping.shippingCost !== oldSale.shipping?.shippingCost) {
+      changes.push(`Shipping: $${oldhipping?.shippingCost || 0} → $${req.body.shipping.shippingCost}`);
+    }
+    if (req.body.shipping?.trackingNumber && req.body.shipping.trackingNumber !== oldSale.shipping?.trackingNumber) {
+      changes.push(`Tracking: ${oldSale.shipping?.trackingNumber || 'None'} → ${req.body.shipping.trackingNumber}`);
+    }
+    if (req.body.discount !== undefined && req.body.discount !== oldSale.discount) {
+      changes.push(`Discount: $${oldSale.discount || 0} → $${req.body.discount}`);
+    }
+    
+    const changesSummary = changes.length > 0 ? changes.join(', ') : 'Sale details updated';
+    
     const editEntry = {
       editedBy: req.user?.name || 'System',
       editedAt: new Date(),
-      changes: 'Sale updated'
+      changes: changesSummary
     };
     
     req.body.$push = { editHistory: editEntry };
@@ -185,7 +209,7 @@ exports.updateSale = async (req, res) => {
     
     // Update IMEI history for all items in the sale
     const Inventory = require('../models/Inventory');
-    for (const item of sale.items) {
+    for (conm of sale.items) {
       if (item.imei) {
         await Inventory.updateOne(
           { 'devices.imei': item.imei },
@@ -194,7 +218,7 @@ exports.updateSale = async (req, res) => {
               'devices.$.history': {
                 action: 'Sale Edited',
                 date: new Date(),
-                details: `Sale #${sale.saleNumber} updated by ${req.user?.name || 'System'}`,
+                details: `Sale #${sale.saleNumber}: ${changesSummary}`,
                 user: req.user?.name || 'System'
               }
             }
@@ -207,6 +231,7 @@ exports.updateSale = async (req, res) => {
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
+};
 };
 
 exports.deleteSale = async (req, res) => {
