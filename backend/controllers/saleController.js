@@ -173,6 +173,18 @@ exports.updateSale = async (req, res) => {
     const oldSale = await Sale.findById(req.params.id);
     if (!oldSale) return res.status(404).json({ success: false, message: 'Sale not found' });
     
+
+    // Recalculate subtotal and totals if items changed
+    if (req.body.items) {
+      req.body.subtotal = req.body.items.reduce((sum, item) => sum + (item.salePrice || 0), 0);
+      req.body.totalAmount = req.body.subtotal - (req.body.discount || 0) + (req.body.tax || 0);
+      
+      const totalCost = req.body.items.reduce((sum, item) => sum + (item.costPrice || 0), 0);
+      const grossProfit = req.body.subtotal - totalCost;
+      const totalExpenses = (req.body.costs?.marketplaceFees || 0) + (req.body.costs?.handling || 0) + (req.body.costs?.packaging || 0) + (req.body.costs?.other || 0) + (req.body.shipping?.shippingCost || 0);
+      req.body.totalProfit = grossProfit - totalExpenses - (req.body.discount || 0);
+    }
+
     // Track detailed changes
     const changes = [];
     
