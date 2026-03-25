@@ -35,10 +35,15 @@ const saleSchema = new mongoose.Schema({
     default: 'paid'
   },
   amountPaid: { type: Number, default: 0 },
-  status: {
+  paymentStatus: {
     type: String,
-    enum: ['completed', 'pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'],
-    default: 'completed'
+    enum: ['paid', 'pending', 'failed', 'cancelled', 'refunded'],
+    default: 'paid'
+  },
+  deliveryStatus: {
+    type: String,
+    enum: ["pending", "processing", "shipped", "in_transit", "out_for_delivery", "delivered", "hold", "cancelled", "exception"],
+    default: "pending"
   },
   // Sales Channel
   salesChannel: {
