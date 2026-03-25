@@ -75,7 +75,7 @@ export default function SalesList() {
   const [saleForm, setSaleForm] = useState({
     customerId: '', customerName: 'Walk-in Customer',
     items: [], discount: 0, tax: 0,
-    paymentMethod: 'cash', paymentStatus: 'paid', notes: '',
+    paymentMethod: 'cash', paymentStatus: 'paid', deliveryStatus: 'pending', notes: '',
     salesChannel: 'in_store',
     shipping: {
       trackingNumber: '', carrier: '', shippingMethod: '', shippingCost: 0,
@@ -173,7 +173,7 @@ export default function SalesList() {
         customerId: selectedCustomer?._id || '', 
         customerName: selectedCustomer?.name || 'Walk-in Customer',
         items: [], discount: 0, tax: 0,
-        paymentMethod: 'cash', paymentStatus: 'paid', notes: '',
+        paymentMethod: 'cash', paymentStatus: 'paid', deliveryStatus: 'pending', notes: '',
         salesChannel: 'in_store',
         shipping: selectedCustomer ? {
           trackingNumber: '', carrier: '', shippingMethod: '', shippingCost: 0,
@@ -412,6 +412,7 @@ export default function SalesList() {
           tax: sale.tax || 0,
           paymentMethod: sale.paymentMethod,
           paymentStatus: sale.paymentStatus,
+          deliveryStatus: sale.deliveryStatus || "pending",
           notes: sale.notes || "",
           salesChannel: sale.salesChannel,
           shipping: sale.shipping || { trackingNumber: "", carrier: "", shippingMethod: "", shippingCost: 0, address: { name: "", street: "", city: "", state: "", zipCode: "", country: "USA", phone: "" } },
@@ -861,9 +862,26 @@ export default function SalesList() {
                   </div>
                   <div><label style={lbl}>Payment Status</label>
                     <select value={saleForm.paymentStatus} onChange={(e) => setSaleForm(prev => ({ ...prev, paymentStatus: e.target.value }))} style={sel}>
-                      <option value="paid">Paid</option><option value="partial">Partial</option><option value="unpaid">Unpaid</option>
+                      <option value="paid">Paid</option>
+                      <option value="pending">Pending</option>
+                      <option value="failed">Failed</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="refunded">Refunded</option>
                     </select>
                   </div>
+                <div><label style={lbl}>Delivery Status</label>
+                  <select value={saleForm.deliveryStatus || "pending"} onChange={(e) => setSaleForm(prev => ({ ...prev, deliveryStatus: e.target.value }))} style={sel}>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="in_transit">In Transit</option>
+                    <option value="out_for_delivery">Out for Delivery</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="hold">Hold</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="exception">Exception</option>
+                  </select>
+                </div>
                 </div>
                 <div><label style={lbl}>Notes</label>
                   <textarea value={saleForm.notes} onChange={(e) => setSaleForm(prev => ({ ...prev, notes: e.target.value }))} rows="2"
