@@ -221,7 +221,7 @@ exports.updateSale = async (req, res) => {
     
     // Costs
     if (req.body.costs?.marketplaceFees !== undefined && req.body.costs.marketplaceFees !== oldSale.costs?.marketplaceFees) {
-      changes.push(`Marketplace Fees: $${oldSalemarketplaceFees || 0} → $${req.body.costs.marketplaceFees}`);
+      changes.push(`Marketplace Fees: $${oldSale.costs?.marketplaceFees || 0} → $${req.body.costs.marketplaceFees}`);
     }
     if (req.body.costs?.handling !== undefined && req.body.costs.handling !== oldSale.costs?.handling) {
       changes.push(`Handling: $${oldSale.costs?.handling || 0} → $${req.body.costs.handling}`);
