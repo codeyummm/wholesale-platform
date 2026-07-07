@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { Camera, Upload, X, Check, Edit2 } from 'lucide-react';
+import api from '../utils/api';
+import heic2any from 'heic2any';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Setup PDF worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const SaleScanner = ({ onScanComplete, onClose }) => {
   const [image, setImage] = useState(null);
@@ -8,12 +14,77 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
   const [error, setError] = useState('');
   const [scannedData, setScannedData] = useState(null);
 
-  const handleImageSelect = (e) => {
+  const isImageRenderable = (file) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => { URL.revokeObjectURL(objectUrl); resolve(true); };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(false); };
+      img.src = objectUrl;
+    });
+  };
+
+  const convertToJpeg = async (file) => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    if (ext === 'heic' || ext === 'heif' || file.type === 'image/heic') {
+      try {
+        // Sometimes iOS auto-converts HEIC to JPEG on upload but keeps the .HEIC extension.
+        // If the browser can render it natively, it's already a valid JPEG/PNG!
+        const canRender = await isImageRenderable(file);
+        if (canRender) {
+          console.log('File has HEIC extension but is natively renderable (iOS auto-converted). Bypassing conversion.');
+          return new File([file], file.name.replace(/\.heic|\.heif$/i, '.jpg'), { type: file.type || 'image/jpeg' });
+        }
+
+        const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+        const blobObj = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        return new File([blobObj], file.name.replace(/\.heic|\.heif$/i, '.jpg'), { type: 'image/jpeg' });
+      } catch (err) {
+        console.error('HEIC conversion failed:', err);
+        console.warn('Fallback: Bypassing HEIC conversion and uploading original file.');
+        return file;
+      }
+    }
+    
+    if (ext === 'pdf' || file.type === 'application/pdf') {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 2.5 }); // High res for OCR
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: context, viewport }).promise;
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+        return new File([blob], file.name.replace(/\.pdf$/i, '.jpg'), { type: 'image/jpeg' });
+      } catch (err) {
+        console.error('PDF conversion failed', err);
+        throw new Error('Failed to extract PDF image. Please upload a JPG/PNG.');
+      }
+    }
+    return file;
+  };
+
+  const handleImageSelect = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
-      setError('');
+      try {
+        setLoading(true);
+        setError('Processing file format...');
+        const processedFile = await convertToJpeg(file);
+        setImage(processedFile);
+        setPreview(URL.createObjectURL(processedFile));
+        setError('');
+      } catch (err) {
+        setError(err.message);
+        setImage(null);
+        setPreview(null);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -30,20 +101,37 @@ const SaleScanner = ({ onScanComplete, onClose }) => {
     formData.append('image', image);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('https://wholesale-platform-production.up.railway.app/api/sale-scanner/scan-label', {
-        method: 'POST',
+      const response = await api.post('/sale-scanner/scan-label', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success) {
+        let scannedDevice = result.data.device || {};
+        
+        // Pre-fill missing data from inventory if IMEI is found
+        if (scannedDevice.imei) {
+          try {
+            const invRes = await api.get(`/inventory/search/${scannedDevice.imei}`);
+            if (invRes.data.success && invRes.data.data) {
+              const matchedInventory = invRes.data.data;
+              scannedDevice = {
+                ...scannedDevice,
+                model: matchedInventory.model || scannedDevice.model,
+                storage: matchedInventory.specifications?.storage || scannedDevice.storage,
+                color: matchedInventory.specifications?.color || scannedDevice.color,
+              };
+            }
+          } catch (e) {
+            console.error("Failed to pre-fill from inventory", e);
+          }
+        }
+
         setScannedData({
-          device: result.data.device || {},
+          device: scannedDevice,
           shipping: result.data.shipping || {}
         });
       } else {

@@ -32,7 +32,7 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid credentials' });
     
     const token = generateToken(user._id);
-    res.status(200).json({ success: true, token, user: { id: user._id, email: user.email, role: user.role } });
+    res.status(200).json({ success: true, token, user: { id: user._id, name: user.name, email: user.email, role: user.role, permissions: user.permissions } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -41,7 +41,7 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    res.json({ success: true, user: { id: user._id, email: user.email, role: user.role } });
+    res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: user.role, permissions: user.permissions } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

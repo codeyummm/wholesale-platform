@@ -2,6 +2,7 @@ const Tesseract = require('tesseract.js');
 const Invoice = require('../models/Invoice');
 const Supplier = require('../models/Supplier');
 const Inventory = require('../models/Inventory');
+const imeiLabController = require('./imeiLabController');
 
 const parseProductDescription = (description) => {
   const parts = description.split('/').map(p => p.trim()).filter(p => p);
@@ -138,6 +139,7 @@ exports.saveInvoice = async (req, res) => {
     }
 
     // Add to inventory with supplier ref
+    const allNewImeis = [];
     if (addToInventory&&products&&products.length>0) {
       for (const product of products) {
         try {
@@ -146,19 +148,28 @@ exports.saveInvoice = async (req, res) => {
           const storage=product.storage||'';const color=product.color||'';
           const costPrice=product.unitPrice||0;const retailPrice=Math.round(costPrice*1.2);
           const existingItem=await Inventory.findOne({model:modelName,brand:brandName,'specifications.storage':storage,'specifications.color':color});
+          let invId = null;
           if (existingItem) {
             const newDevices=(product.imeis||[]).map(imei=>({imei,unlockStatus:product.lockStatus||'unlocked',condition:'new',grade:product.grade||'A'}));
             existingItem.quantity+=product.quantity||1;existingItem.price.cost=costPrice;existingItem.price.retail=retailPrice;
             if(newDevices.length>0)existingItem.devices.push(...newDevices);
             if(supplier){existingItem.supplier=supplier._id;existingItem.supplierName=supplier.name;}
             await existingItem.save();
+            invId = existingItem._id;
           } else {
             const devices=(product.imeis||[]).map(imei=>({imei,unlockStatus:product.lockStatus||'unlocked',condition:'new',grade:product.grade||'A'}));
-            await Inventory.create({model:modelName,brand:brandName,quantity:product.quantity||1,
+            const newItem = await Inventory.create({model:modelName,brand:brandName,quantity:product.quantity||1,
               price:{cost:costPrice,retail:retailPrice},specifications:{storage,color},devices,
               supplier:supplier?supplier._id:null,supplierName:supplier?supplier.name:''});
+            invId = newItem._id;
+          }
+          if (product.imeis && product.imeis.length > 0) {
+            allNewImeis.push(...product.imeis.map(imei => ({ imei, brand: product.brand || product.name || '', model: modelName, inventoryId: invId })));
           }
         } catch(invError){console.error('Inventory error:',invError.message);}
+      }
+      if (allNewImeis.length > 0) {
+        imeiLabController.autoSubmitImeiLab(allNewImeis).catch(e => console.error('Failed to trigger auto IMEI Lab:', e));
       }
     }
 
@@ -184,6 +195,71 @@ exports.getInvoice = async (req, res) => {
     if(!invoice) return res.status(404).json({success:false,message:'Invoice not found'});
     res.json({success:true,data:invoice});
   } catch(error){res.status(500).json({success:false,message:'Failed to fetch invoice',error:error.message});}
+};
+
+exports.updateInvoice = async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({ _id: req.params.id, createdBy: req.user._id });
+    if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
+    
+    const allNewImeis = [];
+    const incomingProducts = req.body.products || [];
+    
+    for (let i = 0; i < incomingProducts.length; i++) {
+      const incomingProd = incomingProducts[i];
+      const existingProd = invoice.products.find(p => (p._id && incomingProd._id && p._id.toString() === incomingProd._id.toString()) || p.name === incomingProd.name);
+      
+      const existingImeis = existingProd ? (existingProd.imeis || []) : [];
+      const incomingImeis = incomingProd.imeis || [];
+      
+      const newImeis = incomingImeis.filter(imei => !existingImeis.includes(imei));
+      if (newImeis.length > 0) {
+        const modelName = `${incomingProd.brand||''} ${incomingProd.model||''}`.trim() || incomingProd.name || 'Unknown';
+        const brandName = incomingProd.brand || 'Unknown';
+        
+        const existingItem = await Inventory.findOne({
+           model: modelName, brand: brandName, 
+           'specifications.storage': incomingProd.storage || '', 
+           'specifications.color': incomingProd.color || ''
+        });
+        
+        const newDevices = newImeis.map(imei => {
+           let status = (incomingProd.lockStatus || 'unlocked').toLowerCase();
+           if (!['locked', 'unlocked', 'carrier_locked'].includes(status)) status = 'unlocked';
+           return { imei, unlockStatus: status, condition: 'new', grade: incomingProd.grade || 'A' };
+        });
+        
+        let invId = null;
+        if (existingItem) {
+           existingItem.devices.push(...newDevices);
+           await existingItem.save();
+           invId = existingItem._id;
+        } else {
+           const newItem = await Inventory.create({
+              model: modelName, brand: brandName, quantity: incomingProd.quantity || 1,
+              price: { cost: incomingProd.unitPrice || 0, retail: Math.round((incomingProd.unitPrice || 0) * 1.2) },
+              specifications: { storage: incomingProd.storage || '', color: incomingProd.color || '' },
+              devices: newDevices,
+              supplier: invoice.supplier, supplierName: invoice.supplierName
+           });
+           invId = newItem._id;
+        }
+        allNewImeis.push(...newImeis.map(imei => ({ imei, brand: incomingProd.brand || incomingProd.name || '', model: modelName, inventoryId: invId })));
+      }
+    }
+    
+    Object.assign(invoice, req.body);
+    await invoice.save();
+    
+    if (allNewImeis.length > 0) {
+      imeiLabController.autoSubmitImeiLab(allNewImeis).catch(e => console.error('Failed to trigger auto IMEI Lab:', e));
+    }
+    
+    res.json({ success: true, message: 'Invoice updated successfully', data: invoice });
+  } catch (error) {
+    console.error('Update invoice error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update invoice', error: error.message });
+  }
 };
 
 exports.deleteInvoice = async (req, res) => {

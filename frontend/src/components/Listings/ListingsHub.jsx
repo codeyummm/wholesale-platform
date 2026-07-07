@@ -1,0 +1,177 @@
+import React, { useState, useEffect } from 'react';
+import { Package, Search, Plus, Filter, Globe, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import api from '../../utils/api';
+import SyncModal from './SyncModal';
+
+export default function ListingsHub() {
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [selectedListing, setSelectedListing] = useState(null);
+
+  // Fetch from /api/listings
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  const fetchListings = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/listings');
+      if (res.data.success) {
+        setListings(res.data.listings);
+      }
+    } catch (err) {
+      console.error('Failed to fetch listings', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenSync = (listing) => {
+    setSelectedListing(listing);
+    setSyncModalOpen(true);
+  };
+
+  const handleImportShopify = async () => {
+    try {
+      setLoading(true);
+      const res = await api.post('/shopify/import-products');
+      if (res.data.success) {
+        alert(`Successfully imported ${res.data.imported} products from Shopify!`);
+        fetchListings();
+      } else {
+        alert('Failed to import products.');
+      }
+    } catch (err) {
+      console.error('Import failed', err);
+      alert('Error importing from Shopify. Make sure it is connected.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Package className="text-indigo-600" /> Canonical Listings
+          </h1>
+          <p className="text-gray-500 mt-1">Manage master products and sync them to connected sales channels.</p>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={handleImportShopify}
+            disabled={loading}
+            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50">
+            <Globe size={18} /> Import from Shopify
+          </button>
+          <Link to="/sales-channels/listings/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
+            <Plus size={18} /> Create Listing
+          </Link>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+          <div className="relative w-64">
+            <input
+              type="text"
+              placeholder="Search listings..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+          </div>
+          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 border border-gray-300 px-3 py-1.5 rounded bg-white">
+            <Filter size={16} /> Filter
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200 text-sm text-gray-500">
+                <th className="p-4 font-medium">Product Title</th>
+                <th className="p-4 font-medium">SKU</th>
+                <th className="p-4 font-medium">Inventory</th>
+                <th className="p-4 font-medium">Base Price</th>
+                <th className="p-4 font-medium">Channels</th>
+                <th className="p-4 font-medium">Status</th>
+                <th className="p-4 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {listings.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-8 text-center text-gray-500">
+                    No listings found. Create a canonical listing to get started.
+                  </td>
+                </tr>
+              ) : (
+                listings.map(listing => (
+                  <tr key={listing._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="p-4 font-medium text-gray-900">{listing.title}</td>
+                    <td className="p-4 text-gray-600">{listing.sku}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        listing.quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {listing.quantity} in stock
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-900">${listing.price.toFixed(2)}</td>
+                    <td className="p-4">
+                      <div className="flex gap-1">
+                        {listing.channels && listing.channels.length > 0 ? (
+                          listing.channels.map(c => (
+                            <span key={c} className="px-2 py-0.5 bg-gray-100 border border-gray-200 text-gray-600 rounded text-xs capitalize">
+                              {c}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-sm">None</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
+                        listing.status === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {listing.status}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Link to={`/sales-channels/listings/${listing._id}`} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1">
+                          Edit
+                        </Link>
+                        <button 
+                          onClick={() => handleOpenSync(listing)}
+                          className="text-gray-600 hover:text-gray-900 text-sm font-medium flex items-center gap-1"
+                        >
+                          Sync <Globe size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <SyncModal 
+        isOpen={syncModalOpen} 
+        onClose={() => setSyncModalOpen(false)} 
+        listing={selectedListing}
+        onSyncStarted={() => {
+          fetchListings();
+          alert('Sync job started!');
+        }}
+      />
+    </div>
+  );
+}

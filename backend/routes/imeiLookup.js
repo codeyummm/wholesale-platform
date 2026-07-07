@@ -23,10 +23,12 @@ router.get('/:imei', protect, async (req, res) => {
       const device = inventoryItem.devices.find(d => d.imei === imei);
       deviceInfo = {
         inventoryId: inventoryItem._id,
+        deviceId: device?._id,
         model: inventoryItem.model,
         brand: inventoryItem.brand,
         storage: inventoryItem.specifications?.storage || '',
         color: inventoryItem.specifications?.color || '',
+        supplierName: inventoryItem.supplierName || 'Unknown Supplier',
         costPrice: inventoryItem.price?.cost || 0,
         retailPrice: inventoryItem.price?.retail || 0,
         imei: device?.imei,
@@ -35,7 +37,8 @@ router.get('/:imei', protect, async (req, res) => {
         grade: device?.grade,
         isSold: device?.isSold || false,
         soldDate: device?.soldDate,
-        addedDate: inventoryItem.createdAt
+        addedDate: inventoryItem.createdAt,
+        labData: device?.labData
       };
     }
 
@@ -68,7 +71,7 @@ router.get('/:imei', protect, async (req, res) => {
 
     // Find device tests
     const tests = await DeviceTest.find({ imei: imei })
-      .select('overallStatus summary testedBy createdAt notes')
+      .select('overallStatus summary testResults testedBy createdAt notes')
       .sort({ createdAt: -1 }).limit(10);
 
     // Build timeline
@@ -82,6 +85,15 @@ router.get('/:imei', protect, async (req, res) => {
         date: deviceInfo.addedDate,
         status: 'info'
       });
+      if (deviceInfo.labData) {
+        timeline.push({
+          type: 'lab',
+          title: 'IMEI Lab Verified',
+          description: `Unlock Status: ${deviceInfo.unlockStatus || 'Unknown'}`,
+          date: deviceInfo.addedDate,
+          status: 'success'
+        });
+      }
     }
 
     invoices.forEach(inv => {
@@ -114,8 +126,8 @@ router.get('/:imei', protect, async (req, res) => {
       });
     });
 
-    // Sort timeline by date
-    timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Sort timeline by date (chronological: oldest first)
+    timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     res.json({
       success: true,

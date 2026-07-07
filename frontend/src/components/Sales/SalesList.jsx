@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import printJS from 'print-js';
+import heic2any from 'heic2any';
 import SaleScanner from '../SaleScanner';
 import {
   Plus, Search, Camera, Trash2, ChevronLeft, ChevronRight, Loader2,
   ShoppingCart, DollarSign, TrendingUp, X, Save, Smartphone,
-  Receipt, Edit2, Eye, Calendar, Filter, Truck, Package, MapPin, Copy, ExternalLink
+  Receipt, Edit2, Eye, Calendar, Filter, Truck, Package, MapPin, Copy, ExternalLink, CheckCircle2, Printer, Upload
 } from 'lucide-react';
 
 // Auto-detect carrier from tracking number
@@ -56,11 +58,19 @@ const inp = { width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', b
 const sel = { width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', background: 'white' };
 
 export default function SalesList() {
+  const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [showSaleScanner, setShowSaleScanner] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [stats, setStats] = useState({ today: {}, thisMonth: {}, allTime: {} });
@@ -88,6 +98,8 @@ export default function SalesList() {
   const [manualPrice, setManualPrice] = useState('');
   const [showShipping, setShowShipping] = useState(false);
   const [searchParams] = useSearchParams();
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [customerConfirm, setCustomerConfirm] = useState(null);
   const hasAutoOpened = useRef(false);
   useEffect(() => { if (selectedSale) console.log("📊 Selected Sale:", selectedSale); }, [selectedSale]);
 
@@ -119,14 +131,38 @@ export default function SalesList() {
     });
   };
 
-  // Auto-open create modal when customerId param exists
+  const [ebayStatus, setEbayStatus] = useState(null);
+
+  // Auto-open create modal when customerId param exists and check eBay connection status
   useEffect(() => {
     const customerId = searchParams.get('customerId');
     const openModal = searchParams.get('openModal');
     if (customerId && openModal === 'true' && !hasAutoOpened.current) {
 
     }
-  }, [searchParams]);
+    
+    // Check eBay auth callback param
+    const authStatus = searchParams.get('ebayAuth');
+    if (authStatus === 'success') {
+      showToast('Successfully connected to eBay!', 'success');
+      searchParams.delete('ebayAuth');
+      navigate({ search: searchParams.toString() }, { replace: true });
+    } else if (authStatus === 'failed') {
+      showToast('Failed to connect to eBay. Please check your credentials and try again.', 'error');
+      searchParams.delete('ebayAuth');
+      navigate({ search: searchParams.toString() }, { replace: true });
+    }
+
+    // Fetch integration status
+    api.get('/ebay/status')
+      .then(res => {
+        if (res.data && res.data.success) {
+          setEbayStatus(res.data);
+        }
+      })
+      .catch(err => console.error("eBay status error:", err));
+      
+  }, [searchParams, navigate]);
 
   const fetchSales = async () => {
     setLoading(true);
@@ -221,47 +257,81 @@ export default function SalesList() {
     }
   };
 
-  const handleScanComplete = (scanResult) => {
+  const handleScanComplete = async (scanResult) => {
     // Process scanned device data
     if (scanResult.device && scanResult.device.imei) {
       const device = scanResult.device;
       
-      // Try to find matching inventory item by IMEI
-      let matchedInventory = null;
-      let matchedDevice = null;
-      
-      for (const inv of inventory) {
-        const foundDevice = inv.devices?.find(d => d.imei === device.imei && !d.isSold);
-        if (foundDevice) {
-          matchedInventory = inv;
-          matchedDevice = foundDevice;
-          break;
+      try {
+        // Try to find matching inventory item by IMEI against the actual database
+        const res = await api.get(`/inventory/search/${device.imei}`);
+        
+        if (res.data.success && res.data.data) {
+          const matchedInventory = res.data.data;
+          const matchedDevice = matchedInventory.devices?.find(d => d.imei === device.imei && !d.isSold);
+          
+          if (matchedInventory && matchedDevice) {
+            setSaleForm(prev => {
+              const updatedItems = [...prev.items];
+              // Find the first item that was imported from eBay (or created manually) that doesn't have an IMEI yet
+              const emptyItemIdx = updatedItems.findIndex(item => !item.imei || item.imei === '-');
+          
+          if (emptyItemIdx >= 0) {
+            // Overwrite the existing item with inventory details, but preserve the salePrice
+            const existingItem = updatedItems[emptyItemIdx];
+            updatedItems[emptyItemIdx] = {
+              ...existingItem,
+              inventoryId: matchedInventory._id,
+              model: matchedInventory.model,
+              brand: matchedInventory.brand || "",
+              storage: matchedInventory.specifications?.storage || "",
+              color: matchedInventory.specifications?.color || "",
+              imei: matchedDevice.imei,
+              condition: matchedDevice.condition || "",
+              grade: matchedDevice.grade || "",
+              labData: matchedDevice.labData || null,
+              unlockStatus: matchedDevice.unlockStatus || "",
+              description: `${matchedInventory.brand} ${matchedInventory.model} ${matchedInventory.specifications?.storage || ''} ${matchedInventory.specifications?.color || ''}`.trim(),
+              costPrice: matchedInventory.price?.cost || 0,
+              profit: (existingItem.salePrice || 0) - (matchedInventory.price?.cost || 0)
+            };
+            showToast(`Merged device ${matchedDevice.imei} into existing item`, 'success');
+          } else {
+            // If no empty items exist, append it as a new item
+            const newItem = {
+              inventoryId: matchedInventory._id,
+              model: matchedInventory.model,
+              brand: matchedInventory.brand || "",
+              storage: matchedInventory.specifications?.storage || "",
+              color: matchedInventory.specifications?.color || "",
+              imei: matchedDevice.imei,
+              condition: matchedDevice.condition || "",
+              grade: matchedDevice.grade || "",
+              labData: matchedDevice.labData || null,
+              unlockStatus: matchedDevice.unlockStatus || "",
+              description: `${matchedInventory.brand} ${matchedInventory.model} ${matchedInventory.specifications?.storage || ''} ${matchedInventory.specifications?.color || ''}`.trim(),
+              costPrice: matchedInventory.price?.cost || 0,
+              salePrice: matchedInventory.price?.retail || 0,
+              profit: (matchedInventory.price?.retail || 0) - (matchedInventory.price?.cost || 0)
+            };
+            updatedItems.push(newItem);
+            showToast(`Device added: ${newItem.description}`, 'success');
+          }
+          
+          return {
+            ...prev,
+            items: updatedItems
+          };
+        });
+          } else {
+            showToast(`Device with IMEI ${device.imei} not found in inventory. Please add manually.`, 'error');
+          }
+        } else {
+          showToast(`Device with IMEI ${device.imei} not found in inventory. Please add manually.`, 'error');
         }
-      }
-      
-      if (matchedInventory && matchedDevice) {
-        // Add to sale items
-        const newItem = {
-          inventoryId: matchedInventory._id,
-          model: matchedInventory.model,
-          brand: matchedInventory.brand || "",
-          storage: matchedInventory.specifications?.storage || "",
-          color: matchedInventory.specifications?.color || "",
-          imei: matchedDevice.imei,
-          description: `${matchedInventory.brand} ${matchedInventory.model} ${matchedInventory.specifications?.storage || ''} ${matchedInventory.specifications?.color || ''}`.trim(),
-          costPrice: matchedInventory.price?.cost || 0,
-          salePrice: matchedInventory.price?.retail || 0,
-          profit: (matchedInventory.price?.retail || 0) - (matchedInventory.price?.cost || 0)
-        };
-        
-        setSaleForm(prev => ({
-          ...prev,
-          items: [...prev.items, newItem]
-        }));
-        
-        alert(`Device added: ${newItem.description}`);
-      } else {
-        alert(`Device with IMEI ${device.imei} not found in inventory. Please add manually.`);
+      } catch (err) {
+        console.error("Error fetching inventory by IMEI:", err);
+        showToast(`Device with IMEI ${device.imei} not found in inventory. Please add manually.`, 'error');
       }
     }
     
@@ -286,6 +356,11 @@ export default function SalesList() {
           ...prev.shipping,
           trackingNumber: shipping.tracking_number || prev.shipping.trackingNumber,
           carrier: detectedCarrier || prev.shipping.carrier,
+          labelImage: (prev.shipping.labelImage && prev.shipping.labelImage.startsWith('data:application/pdf')) 
+                      ? prev.shipping.labelImage 
+                      : (shipping.labelImage || prev.shipping.labelImage),
+          scannedLabel: shipping.scannedLabel || prev.shipping.scannedLabel,
+          fullImage: shipping.fullImage || prev.shipping.fullImage,
           address: {
             ...prev.shipping.address,
             name: shipping.recipient_name || prev.shipping.address.name,
@@ -310,6 +385,46 @@ export default function SalesList() {
     }));
   };
 
+  const handleManualLabelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+      try {
+        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+        const newFile = new File([converted], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSaleForm(prev => ({ ...prev, shipping: { ...prev.shipping, scannedLabel: reader.result } }));
+        };
+        reader.readAsDataURL(newFile);
+      } catch (err) {
+        console.error("HEIC conversion failed:", err);
+        showToast("Failed to convert HEIC image.", 'error');
+      }
+    } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSaleForm(prev => {
+          const newShipping = { ...prev.shipping };
+          // If the old labelImage was an image (not a PDF), preserve it as the scanned cutout!
+          if (newShipping.labelImage && !newShipping.labelImage.startsWith('data:application/pdf')) {
+            newShipping.scannedLabel = newShipping.labelImage;
+          }
+          newShipping.labelImage = reader.result;
+          return { ...prev, shipping: newShipping };
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSaleForm(prev => ({ ...prev, shipping: { ...prev.shipping, scannedLabel: reader.result } }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const addItemFromInventory = () => {
     if (!selectedInventory) return;
     const inv = inventory.find(i => i._id === selectedInventory);
@@ -321,6 +436,7 @@ export default function SalesList() {
       inventoryId: inv._id, model: inv.model, brand: inv.brand || '',
       storage: inv.specifications?.storage || '', color: inv.specifications?.color || '',
       imei: device?.imei || '', condition: device?.condition || '', grade: device?.grade || '',
+      labData: device?.labData || null, unlockStatus: device?.unlockStatus || '',
       costPrice: inv.price?.cost || 0, salePrice: parseFloat(manualPrice) || inv.price?.retail || 0,
     };
     newItem.profit = newItem.salePrice - newItem.costPrice;
@@ -361,41 +477,100 @@ export default function SalesList() {
   const handleCreateSale = async () => {
     if (saleForm.items.length === 0) { alert('Add at least one item'); return; }
     try {
-      const payload = { ...saleForm, amountPaid: getTotal() };
-      console.log("📦 Full payload being sent:", JSON.stringify(payload, null, 2));
-      console.log('📤 customerId:', saleForm.customerId);
+      const finalCustomerName = (saleForm.customerName === "Walk-in Customer" && saleForm.shipping?.address?.name) 
+        ? saleForm.shipping.address.name 
+        : saleForm.customerName;
+
+      const payload = { ...saleForm, customerName: finalCustomerName, amountPaid: getTotal() };
       if (!showShipping && !editingId) { payload.shipping = { shippingCost: saleForm.shipping?.shippingCost || 0 }; }
+      
       const res = editingId ? await api.put(`/sales/${editingId}`, payload) : await api.post('/sales', payload);
-      console.log("🔍 Backend response:", res.data);
-      console.log("🔍 res.data.success:", res.data.success);
+      
       if (res.data.success) {
-        console.log("✅ Sale created, res.data:", res.data);
+        const saleData = res.data.data;
         const isWalkIn = saleForm.customerName === "Walk-in Customer";
-        if (isWalkIn && saleForm.shipping?.address?.name) {
-          const save = window.confirm(`Save "${saleForm.shipping.address.name}" as new customer?`);
-          if (save) {
-            try {
-              const custResponse = await api.post("/customers", { name: saleForm.shipping.address.name, contact: { phone: saleForm.shipping.address.phone || "N/A" }, address: { street: saleForm.shipping.address.street, city: saleForm.shipping.address.city, state: saleForm.shipping.address.state, zipCode: saleForm.shipping.address.zipCode } });
-              // Link the sale to the new customer
-              if (custResponse.data.success && res.data.data._id) {
-                await api.put(`/sales/${res.data.data._id}`, { customer: custResponse.data.data._id });
-              }
-              const custRes = await api.get('/customers');
-              setCustomers(custRes.data.data || []);
-            } catch (err) { 
-              console.error('❌ Customer save error:', err);
-              console.error('❌ Error response:', err.response?.data);
-              console.error('❌ Error status:', err.response?.status);
+        
+        // Internal helper to finish up
+        const finalize = (msg) => {
+          setShowCreateModal(false); 
+          setEditingId(null); 
+          fetchSales(); 
+          fetchStats();
+          setSuccessMessage(msg);
+          setTimeout(() => setSuccessMessage(null), 3000);
+          if (selectedSale) viewSaleDetail(editingId || saleData._id);
+        };
+
+        // Only ask to save customer if this is a NEW sale and it's currently a walk-in
+        if (!editingId && isWalkIn && saleForm.shipping?.address?.name) {
+          // Check if customer already exists by name and address
+          try {
+            const existingRes = await api.get(`/customers?search=${encodeURIComponent(saleForm.shipping.address.name)}`);
+            const existingCustomers = existingRes.data.data || [];
+            
+            const match = existingCustomers.find(c => 
+              c.name.toLowerCase() === saleForm.shipping.address.name.toLowerCase() &&
+              (c.address?.street?.toLowerCase() === saleForm.shipping.address.street?.toLowerCase() || 
+               c.contact?.phone === saleForm.shipping.address.phone)
+            );
+
+            if (match) {
+              await api.put(`/sales/${saleData._id}`, { customer: match._id, skipHistory: true });
+              finalize(`Linked to existing customer: ${match.name}`);
+              return;
             }
+          } catch (e) {
+            console.error('Error checking existing customer:', e);
           }
+
+          setCustomerConfirm({
+            name: saleForm.shipping.address.name,
+            onConfirm: async () => {
+              try {
+                const custResponse = await api.post("/customers", { 
+                  name: saleForm.shipping.address.name, 
+                  contact: { phone: saleForm.shipping.address.phone || "N/A" }, 
+                  address: { ...saleForm.shipping.address } 
+                });
+                if (custResponse.data.success && saleData._id) {
+                  await api.put(`/sales/${saleData._id}`, { customer: custResponse.data.data._id, skipHistory: true });
+                }
+                const custRes = await api.get('/customers');
+                setCustomers(custRes.data.data || []);
+              } catch (err) { console.error('Customer save error:', err); }
+              setCustomerConfirm(null);
+              finalize("Sale created successfully!");
+            },
+            onCancel: () => {
+              setCustomerConfirm(null);
+              finalize("Sale created successfully!");
+            }
+          });
+        } else {
+          finalize(editingId ? "Sale updated successfully!" : "Sale created successfully!");
         }
-        setShowCreateModal(false); setEditingId(null); fetchSales(); fetchStats();
-        alert(editingId ? "Sale updated successfully!" : "Sale created successfully!");
-        if (selectedSale) viewSaleDetail(editingId || selectedSale._id);
-        alert('Sale created successfully!');
       }
     } catch (err) {
-      alert('Failed: ' + (err.response?.data?.message || err.message));
+      showToast('Failed: ' + (err.response?.data?.message || err.message), 'error');
+    }
+  };
+
+  const handleSyncShopifyOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await api.post('/shopify/sync-orders');
+      if (res.data.success) {
+        showToast(`Successfully synced ${res.data.syncedCount} orders from Shopify!`);
+        fetchSales();
+        fetchStats();
+      } else {
+        showToast('Failed to sync Shopify orders', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error syncing Shopify orders. Make sure it is connected.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -424,17 +599,24 @@ export default function SalesList() {
     } catch (err) { console.error(err); }
   };
 
-  const handleDeleteSale = async (id) => {
-    if (!window.confirm('Delete this sale? Inventory will be restored.')) return;
-    try { await api.delete(`/sales/${id}`); fetchSales(); fetchStats(); }
-    catch (err) { alert('Failed to delete'); }
+  const handleDeleteSale = (id) => {
+    setDeleteConfirm(id);
   };
 
-  const viewSaleDetail = async (id) => {
-    try {
-      const res = await api.get(`/sales/${id}`);
-      if (res.data.success) { setSelectedSale(res.data.data); setShowDetailModal(true); }
-    } catch (err) { console.error(err); }
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    try { 
+      await api.delete(`/sales/${deleteConfirm}`); 
+      fetchSales(); 
+      fetchStats(); 
+      showToast('Sale deleted successfully'); 
+    }
+    catch (err) { showToast('Failed to delete', 'error'); }
+    finally { setDeleteConfirm(null); }
+  };
+
+  const viewSaleDetail = (id) => {
+    navigate(`/sales/${id}`);
   };
 
   const copyToClipboard = (text) => { navigator.clipboard?.writeText(text); };
@@ -451,16 +633,57 @@ export default function SalesList() {
 
   return (
     <div>
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, backdropFilter: 'blur(2px)', animation: 'fadeIn 0.2s ease-out' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', animation: 'slideUp 0.2s ease-out' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ background: '#fef2f2', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={24} color="#dc2626" />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>Delete Sale</h3>
+            </div>
+            <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>
+              Are you sure you want to delete this sale? This action cannot be undone, and all associated items will be automatically restored to your inventory stock.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setDeleteConfirm(null)} style={{ padding: '10px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#475569', transition: 'all 0.2s' }}>Cancel</button>
+              <button onClick={confirmDelete} style={{ padding: '10px 16px', background: '#dc2626', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: 'white', transition: 'all 0.2s' }}>Delete Sale</button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          `}</style>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#10b981' : '#dc2626', color: 'white', padding: '12px 24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500', fontSize: '14px', animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+          {toast.type === 'success' ? <CheckCircle2 size={18} /> : <X size={18} />}
+          {toast.message}
+          <button onClick={() => setToast(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', marginLeft: '8px', padding: '4px', display: 'flex', alignItems: 'center', opacity: 0.8 }}><X size={14} /></button>
+          <style>{`@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>Sales & Orders</h1>
           <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Create sales and track revenue</p>
         </div>
-        <button onClick={openCreateModal}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#dbeafe', color: '#1d4ed8', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
-          <Plus size={18} /> New Sale
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleSyncShopifyOrders}
+            disabled={loading}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#eef2ff', color: '#4f46e5', padding: '10px 20px', borderRadius: '8px', border: '1px solid #c7d2fe', cursor: 'pointer', fontWeight: '500', fontSize: '14px', opacity: loading ? 0.7 : 1 }}>
+            <ShoppingCart size={18} /> Sync Shopify Orders
+          </button>
+          <button onClick={openCreateModal}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#dbeafe', color: '#1d4ed8', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
+            <Plus size={18} /> New Sale
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -483,6 +706,80 @@ export default function SalesList() {
           </div>
         ))}
       </div>
+
+      {/* Channel Tabs */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', overflowX: 'auto', paddingTop: '8px', paddingBottom: '8px', paddingRight: '8px', scrollbarWidth: 'none' }}>
+        {[
+          { id: '', label: 'All Orders' },
+          { id: 'online', label: 'Own Portal' },
+          { id: 'in_store', label: 'In-Store' },
+          { id: 'ebay', label: 'eBay' },
+          { id: 'amazon', label: 'Amazon' },
+          { id: 'walmart', label: 'Walmart' },
+          { id: 'wholesale', label: 'Wholesale' },
+          { id: 'etsy', label: 'Etsy' },
+          { id: 'shopify', label: 'Shopify' },
+          { id: 'facebook', label: 'Facebook Marketplace' },
+          { id: 'groupon', label: 'Groupon' },
+          { id: 'tiktok', label: 'TikTok Shop' },
+          { id: 'whatnot', label: 'Whatnot' },
+          { id: 'poshmark', label: 'Poshmark' },
+          { id: 'mercari', label: 'Mercari' }
+        ].map(tab => {
+          // Calculate badge count
+          let badgeCount = 0;
+          if (stats?.pendingCounts) {
+            if (tab.id === '') {
+              badgeCount = Object.values(stats.pendingCounts).reduce((a, b) => a + b, 0);
+            } else {
+              badgeCount = stats.pendingCounts[tab.id] || 0;
+            }
+          }
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setFilters(prev => ({ ...prev, channel: tab.id, page: 1 }))}
+              style={{
+                position: 'relative',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: filters.channel === tab.id ? '1px solid #1e293b' : '1px solid #e2e8f0',
+                background: filters.channel === tab.id ? '#1e293b' : 'white',
+                color: filters.channel === tab.id ? 'white' : '#64748b',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s',
+                boxShadow: filters.channel === tab.id ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none'
+              }}
+            >
+              {tab.label}
+              {badgeCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-6px',
+                  right: '-6px',
+                  background: '#ef4444',
+                  color: 'white',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  boxShadow: '0 0 0 2px white',
+                  minWidth: '20px',
+                  textAlign: 'center',
+                  zIndex: 10
+                }}>
+                  {badgeCount > 99 ? '99+' : badgeCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
           <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
@@ -500,21 +797,7 @@ export default function SalesList() {
           <option value="delivered">Delivered</option>
           <option value="cancelled">Cancelled</option>
         </select>
-        <select value={filters.channel} onChange={(e) => setFilters(prev => ({ ...prev, channel: e.target.value }))} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", minWidth: "140px" }}>
-          <option value="">All Channels</option>
-          <option value="in_store">In-Store</option>
-          <option value="online">Online</option>
-          <option value="ebay">eBay</option>
-          <option value="amazon">Amazon</option>
-          <option value="walmart">Walmart</option>
-          <option value="etsy">Etsy</option>
-          <option value="facebook">Facebook Marketplace</option>
-          <option value="mercari">Mercari</option>
-          <option value="offerup">OfferUp</option>
-          <option value="wholesale">Wholesale</option>
-          <option value="phone">Phone Order</option>
-          <option value="other">Other</option>
-        </select>
+
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", minWidth: "140px" }}>
           <option value="date">Sort by Date</option>
           <option value="amount">Sort by Amount</option>
@@ -555,13 +838,35 @@ export default function SalesList() {
               </thead>
               <tbody>
                 {sales.map((sale) => {
-                  const sc = statusColors[sale.status] || statusColors.completed;
+                  let displayStatus = 'pending';
+                  let sc = statusColors.pending;
+
+                  if (sale.status === 'delivered' || sale.status === 'completed' || sale.deliveryStatus === 'delivered') {
+                    displayStatus = 'delivered';
+                    sc = statusColors.delivered;
+                  } else if (sale.deliveryStatus === 'out_for_delivery') {
+                    displayStatus = 'out for delivery';
+                    sc = { bg: '#eef2ff', color: '#4338ca' };
+                  } else if (sale.status === 'shipped' || sale.deliveryStatus === 'shipped' || sale.deliveryStatus === 'in_transit') {
+                    displayStatus = 'shipped';
+                    sc = statusColors.shipped;
+                  } else if (sale.status === 'cancelled') {
+                    displayStatus = 'cancelled';
+                    sc = statusColors.cancelled;
+                  }
                   const cc = channelColors[sale.salesChannel] || channelColors.other;
                   return (
                     <tr key={sale._id} style={{ borderBottom: '1px solid #f1f5f9' }}
                       onMouseEnter={(e) => e.currentTarget.style.background='#f8fafc'}
                       onMouseLeave={(e) => e.currentTarget.style.background='white'}>
-                      <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>{sale.saleNumber}</td>
+                      <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>
+                        <div>{sale.saleNumber}</div>
+                        {sale.externalOrderId && (
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>
+                            EID: {sale.externalOrderId}
+                          </div>
+                        )}
+                      </td>
                       <td style={{ padding: '12px 14px', fontSize: '13px', color: '#334155' }}>{sale.customerName}</td>
                       <td style={{ padding: '12px 14px', fontSize: '13px', color: '#64748b' }}>{sale.items?.length || 0}</td>
                       <td style={{ padding: '12px 14px', textAlign: 'center' }}>
@@ -570,7 +875,7 @@ export default function SalesList() {
                       <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#0f172a', textAlign: 'right' }}>${sale.totalAmount?.toFixed(2)}</td>
                       <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: sale.totalProfit >= 0 ? '#059669' : '#dc2626', textAlign: 'right' }}>${sale.totalProfit?.toFixed(2)}</td>
                       <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                        <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', background: sc.bg, color: sc.color }}>{sale.status}</span>
+                        <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', background: sc.bg, color: sc.color }}>{displayStatus}</span>
                       </td>
                       <td style={{ padding: '12px 14px', fontSize: '12px' }}>
                         {sale.shipping?.trackingNumber ? (
@@ -703,6 +1008,11 @@ export default function SalesList() {
                         <td style={{ padding: '8px 12px' }}>
                           <div style={{ fontSize: '13px', fontWeight: '500', color: '#0f172a' }}>{item.brand} {item.model}</div>
                           <div style={{ fontSize: '11px', color: '#94a3b8' }}>{item.storage} {item.color}</div>
+                          {item.labData && (
+                            <div style={{ marginTop: '4px', fontSize: '10px', color: '#059669', background: '#d1fae5', display: 'inline-block', padding: '2px 6px', borderRadius: '4px' }}>
+                              ✅ IMEI Lab Verified
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '8px 12px', fontSize: '11px', fontFamily: 'monospace', color: '#64748b' }}>{item.imei || '-'}</td>
                         <td style={{ padding: '8px 12px', textAlign: 'right' }}>
@@ -731,9 +1041,17 @@ export default function SalesList() {
             {/* Shipping Section */}
             {showShipping && (
               <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '16px', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <Truck size={16} color="#4338ca" />
-                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Shipping Details</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Truck size={16} color="#4338ca" />
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Shipping Details</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="file" id="manual-label-upload" accept="image/*,.pdf,.heic" style={{ display: 'none' }} onChange={handleManualLabelUpload} />
+                    <label htmlFor="manual-label-upload" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: '#475569', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <Upload size={12} /> {saleForm.shipping.labelImage || saleForm.shipping.scannedLabel ? 'Change Label' : 'Upload Label'}
+                    </label>
+                  </div>
                 </div>
 
                 {/* Tracking + Carrier */}
@@ -872,14 +1190,9 @@ export default function SalesList() {
                 <div><label style={lbl}>Delivery Status</label>
                   <select value={saleForm.deliveryStatus || "pending"} onChange={(e) => setSaleForm(prev => ({ ...prev, deliveryStatus: e.target.value }))} style={sel}>
                     <option value="pending">Pending</option>
-                    <option value="processing">Processing</option>
                     <option value="shipped">Shipped</option>
-                    <option value="in_transit">In Transit</option>
                     <option value="out_for_delivery">Out for Delivery</option>
                     <option value="delivered">Delivered</option>
-                    <option value="hold">Hold</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="exception">Exception</option>
                   </select>
                 </div>
                 </div>
@@ -1025,6 +1338,29 @@ export default function SalesList() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                   <Truck size={16} color="#0284c7" />
                   <span style={{ fontSize: '13px', fontWeight: '600', color: '#0c4a6e' }}>Shipping</span>
+                  {selectedSale.shipping.labelImage && (
+                    <button 
+                      onClick={() => {
+                        const url = selectedSale.shipping.labelImage;
+                        if (url.startsWith('data:application/pdf')) {
+                           const byteCharacters = atob(url.split(',')[1]);
+                           const byteNumbers = new Array(byteCharacters.length);
+                           for (let i = 0; i < byteCharacters.length; i++) {
+                             byteNumbers[i] = byteCharacters.charCodeAt(i);
+                           }
+                           const byteArray = new Uint8Array(byteNumbers);
+                           const blob = new Blob([byteArray], { type: 'application/pdf' });
+                           const blobUrl = URL.createObjectURL(blob);
+                           window.open(blobUrl, '_blank');
+                        } else {
+                           printJS({ printable: url, type: 'image' });
+                        }
+                      }}
+                      style={{ padding: '4px 10px', fontSize: '11px', background: '#0284c7', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Printer size={12} /> Print PDF
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                   <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '700', background: 'white', color: carrierColors[selectedSale.shipping.carrier] || '#64748b' }}>
@@ -1163,6 +1499,44 @@ export default function SalesList() {
               onClose={() => setShowSaleScanner(false)}
             />
           </div>
+        </div>
+      )}
+      {/* Custom Theme Notification */}
+      {successMessage && (
+        <div className="fixed inset-0 flex items-center justify-center z-[100] animate-in fade-in duration-300">
+           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-8 flex flex-col items-center max-w-sm w-full mx-4 transform animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                 <CheckCircle2 className="text-emerald-500" size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Success</h3>
+              <p className="text-sm text-gray-500 text-center">{successMessage}</p>
+           </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Dialog */}
+      {customerConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-in zoom-in-95 duration-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">New Customer Detected</h3>
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                 Would you like to save <span className="font-bold text-gray-900">"{customerConfirm.name}"</span> as a new customer in your database for future orders?
+              </p>
+              <div className="flex gap-3 justify-end">
+                 <button 
+                   onClick={customerConfirm.onCancel}
+                   className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+                 >
+                   No, Skip
+                 </button>
+                 <button 
+                   onClick={customerConfirm.onConfirm}
+                   className="px-6 py-2.5 bg-[#009EF7] hover:bg-[#0086d1] text-white rounded-xl text-sm font-bold transition-colors shadow-lg shadow-blue-500/20"
+                 >
+                   Yes, Save Customer
+                 </button>
+              </div>
+           </div>
         </div>
       )}
     </div>

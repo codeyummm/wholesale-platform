@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { protect } = require('../middleware/auth');
-const { scanInvoice, saveInvoice, getInvoices, getInvoice, deleteInvoice } = require('../controllers/invoiceController');
+const { scanInvoice, saveInvoice, getInvoices, getInvoice, deleteInvoice, updateInvoice } = require('../controllers/invoiceController');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -18,6 +18,7 @@ router.post('/scan', protect, upload.single('invoice'), scanInvoice);
 router.post('/save', protect, saveInvoice);
 router.get('/', protect, getInvoices);
 router.get('/:id', protect, getInvoice);
+router.put('/:id', protect, updateInvoice);
 router.delete('/:id', protect, deleteInvoice);
 
 module.exports = router;

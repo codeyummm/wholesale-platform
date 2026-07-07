@@ -11,11 +11,13 @@ const SaleItemSchema = new mongoose.Schema({
   grade: String,
   costPrice: { type: Number, default: 0 },
   salePrice: { type: Number, required: true },
-  profit: { type: Number, default: 0 }
+  profit: { type: Number, default: 0 },
+  externalLineItemId: { type: String } // Used to fulfill tracking to eBay for specific line items
 });
 
 const saleSchema = new mongoose.Schema({
   saleNumber: { type: String, unique: true, index: true },
+  externalOrderId: { type: String, sparse: true, index: true }, // e.g. eBay Order ID
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
   customerName: { type: String, required: true },
   items: [SaleItemSchema],
@@ -26,19 +28,19 @@ const saleSchema = new mongoose.Schema({
   totalProfit: { type: Number, default: 0 },
   paymentMethod: {
     type: String,
-    enum: ['cash', 'card', 'bank_transfer', 'check', 'zelle', 'paypal', 'other'],
+    enum: ['cash', 'card', 'bank_transfer', 'check', 'zelle', 'paypal', 'ebay', 'other'],
     default: 'cash'
   },
   paymentStatus: {
     type: String,
-    enum: ['paid', 'partial', 'unpaid'],
+    enum: ['paid', 'pending', 'partial', 'unpaid', 'failed', 'cancelled', 'refunded'],
     default: 'paid'
   },
   amountPaid: { type: Number, default: 0 },
-  paymentStatus: {
+  status: {
     type: String,
-    enum: ['paid', 'pending', 'failed', 'cancelled', 'refunded'],
-    default: 'paid'
+    enum: ['completed', 'pending', 'shipped', 'delivered', 'cancelled', 'refunded'],
+    default: 'completed'
   },
   deliveryStatus: {
     type: String,
@@ -56,14 +58,20 @@ const saleSchema = new mongoose.Schema({
     trackingNumber: { type: String, trim: true },
     carrier: {
       type: String,
-      enum: ['', 'UPS', 'USPS', 'FedEx', 'DHL', 'Amazon', 'OnTrac', 'LaserShip', 'Other', 'usps', 'ups', 'fedex', 'dhl', 'amazon', 'ontrac', 'lasership', 'other'],
       default: ''
     },
     shippingMethod: { type: String, trim: true },
     shippingCost: { type: Number, default: 0 },
+    shippingCollected: { type: Number, default: 0 },
+    labelImage: String,
+    scannedLabel: String,
+    fullImage: String,
+    shipmentId: Number,
+    dropoffReceipt: String,
     shippedDate: Date,
     estimatedDelivery: Date,
     deliveredDate: Date,
+    trackingData: { type: mongoose.Schema.Types.Mixed },
     // Customer shipping address (overrides customer default)
     address: {
       name: String,
@@ -77,8 +85,8 @@ const saleSchema = new mongoose.Schema({
   },
   // Additional Costs
   costs: {
-    handling: { type: Number, default: 0 },
-    packaging: { type: Number, default: 0 },
+    handling: { type: Number, default: 1 },
+    packaging: { type: Number, default: 2 },
     marketplaceFees: { type: Number, default: 0 },
     other: { type: Number, default: 0 }
   },
@@ -111,8 +119,9 @@ saleSchema.pre('save', async function (next) {
     const marketplaceFees = this.costs?.marketplaceFees || 0;
     const otherCosts = this.costs?.other || 0;
     const totalCosts = shippingCost + handlingCost + packagingCost + marketplaceFees + otherCosts;
-    this.totalProfit = itemProfits - totalCosts;
-    this.totalAmount = this.subtotal - this.discount + this.tax;
+    const shippingCollected = this.shipping?.shippingCollected || 0;
+    this.totalProfit = itemProfits + shippingCollected - totalCosts;
+    this.totalAmount = this.subtotal - this.discount + this.tax + shippingCollected;
   }
 
   next();

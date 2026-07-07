@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getUsers, createUser, updateUser, resetPassword, deleteUser } = require('../controllers/userController');
+const { getUsers, getDirectory, createUser, updateUser, resetPassword, deleteUser } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
 
 // Admin-only middleware
@@ -11,6 +11,12 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
+// Public directory for logged in users (staff)
+router.get('/directory', protect, getDirectory);
+router.put('/me/signatures', protect, require('../controllers/userController').updateMySignatures);
+
+
+// Admin-only routes
 router.get('/', protect, adminOnly, getUsers);
 router.post('/', protect, adminOnly, createUser);
 router.put('/:id', protect, adminOnly, updateUser);

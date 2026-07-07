@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { scanLabel } = require('../controllers/saleScannerController');
+const { scanLabel, scanReceipt } = require('../controllers/saleScannerController');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -25,5 +25,7 @@ const upload = multer({
 });
 
 router.post('/scan-label', upload.single('image'), scanLabel);
+router.post('/scan-receipt', upload.single('receiptImage'), scanReceipt);
+router.post('/direct-receipt/:id', upload.single('receiptImage'), require('../controllers/saleScannerController').uploadDirectReceipt);
 
 module.exports = router;

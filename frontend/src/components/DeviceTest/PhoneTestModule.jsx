@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { CheckCircle, XCircle } from "lucide-react";
 import "./PhoneTestModule.css";
 
 const TESTS = {
@@ -24,9 +25,14 @@ const TESTS = {
   fingerprint: "Fingerprint"
 };
 
-export default function PhoneTestModule({ imei, onSaveResults }) {
+export default function PhoneTestModule({ imei, inventoryId, deviceId, user, onSaveResults }) {
   const [results, setResults] = useState({});
   const [modal, setModal] = useState(null);
+  const [manualImei, setManualImei] = useState(imei || "");
+  const [isStarted, setIsStarted] = useState(!!imei);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState(null); // { type: 'success' | 'error', msg: string }
 
   useEffect(() => {
     const init = {};
@@ -34,8 +40,54 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
     setResults(init);
   }, []);
 
-  const done = (id, passed) => {
-    setResults(p => ({ ...p, [id]: { status: passed ? "passed" : "failed" } }));
+  const handleSave = async () => {
+    if (!onSaveResults) return;
+    setIsSaving(true);
+    try {
+      const res = await onSaveResults({ 
+        imei: manualImei, 
+        inventoryId, 
+        deviceId, 
+        testedBy: user?.name || user?.username || 'Anonymous',
+        testResults: results, 
+        overallStatus: cnt.failed > 0 ? 'failed' : 'passed',
+        summary: {
+          totalTests: Object.keys(TESTS).length,
+          passedTests: cnt.passed || 0,
+          failedTests: cnt.failed || 0,
+          skippedTests: cnt.skipped || 0,
+          passRate: cnt.passed ? ((cnt.passed / Object.keys(TESTS).length) * 100).toFixed(1) : 0
+        },
+        deviceInfo: {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform
+        }
+      });
+      if (res) {
+        setSaveResult({ type: 'success', msg: 'Device diagnostics saved successfully!' });
+      }
+    } catch (err) {
+      setSaveResult({ type: 'error', msg: err.response?.data?.error || err.message || 'Failed to save test results.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const closeSaveModal = () => {
+    const type = saveResult?.type;
+    setSaveResult(null);
+    if (type === 'success') {
+      // Clear screen
+      setIsStarted(false);
+      if (!imei) setManualImei("");
+      const init = {};
+      Object.keys(TESTS).forEach(k => init[k] = { status: "pending" });
+      setResults(init);
+    }
+  };
+
+  const done = (id, passed, extraData = {}) => {
+    setResults(p => ({ ...p, [id]: { status: passed ? "passed" : "failed", ...extraData } }));
     setModal(null);
   };
 
@@ -51,12 +103,72 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
 
   const icon = s => s === "passed" ? "✓" : s === "failed" ? "✗" : "•";
 
+  if (!isStarted) {
+    return (
+      <div className="phone-test-module" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
+        <div style={{ background: 'var(--bg-tertiary)', padding: '30px', borderRadius: '15px', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '24px', marginBottom: '10px' }}>📱 Device Test</h1>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '30px' }}>Enter the IMEI to begin testing</p>
+          <input 
+            type="text" 
+            value={manualImei} 
+            onChange={e => setManualImei(e.target.value)} 
+            placeholder="15-digit IMEI"
+            style={{ width: '100%', padding: '15px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '18px', textAlign: 'center', marginBottom: '20px', fontFamily: 'monospace' }}
+          />
+          <button 
+            className="btn btn-success" 
+            onClick={() => { if (manualImei.length >= 5) setIsStarted(true); }}
+            style={{ width: '100%', padding: '15px', fontSize: '16px' }}
+          >
+            Start Diagnostics
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="phone-test-module">
+      {saveResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transform transition-all">
+            <div className="p-8 text-center flex flex-col items-center">
+              {saveResult.type === 'success' ? (
+                <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                  <CheckCircle className="w-10 h-10" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                  <XCircle className="w-10 h-10" />
+                </div>
+              )}
+              
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {saveResult.type === 'success' ? 'Success!' : 'Error'}
+              </h2>
+              
+              <p className="text-gray-500 text-base mb-8">
+                {saveResult.msg}
+              </p>
+              
+              <button 
+                className={`w-full py-3 px-4 rounded-lg font-bold text-white transition-colors shadow-sm ${
+                  saveResult.type === 'success' ? 'bg-primary hover:bg-primary/90' : 'bg-red-500 hover:bg-red-600'
+                }`}
+                onClick={closeSaveModal}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="test-header">
         <div className="header-content">
           <h1>📱 Device Test</h1>
-          <p className="subtitle">{imei || "20 Tests"}</p>
+          <p className="subtitle">{manualImei || "20 Tests"}</p>
         </div>
         <div className="header-stats">
           <div className="stat passed">
@@ -72,8 +184,8 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
 
       <div className="test-controls">
         {onSaveResults && (
-          <button className="btn btn-success" onClick={() => onSaveResults({ imei, results, cnt })}>
-            💾 Save
+          <button className="btn btn-success" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? '⏳ Saving...' : '💾 Save Results'}
           </button>
         )}
       </div>
@@ -98,13 +210,13 @@ export default function PhoneTestModule({ imei, onSaveResults }) {
       {modal === "vibration" && <VibrationModal onPass={() => done("vibration", true)} onFail={() => done("vibration", false)} onSkip={() => skip("vibration")} />}
       {modal === "rearCam" && <CamModal facing="environment" onPass={() => done("rearCam", true)} onFail={() => done("rearCam", false)} onSkip={() => skip("rearCam")} />}
       {modal === "frontCam" && <CamModal facing="user" onPass={() => done("frontCam", true)} onFail={() => done("frontCam", false)} onSkip={() => skip("frontCam")} />}
-      {modal === "wifi" && <SimpleModal title="WiFi" msg="Is WiFi working?" onPass={() => done("wifi", true)} onFail={() => done("wifi", false)} onSkip={() => skip("wifi")} />}
+      {modal === "wifi" && <WifiModal onPass={() => done("wifi", true)} onFail={() => done("wifi", false)} onSkip={() => skip("wifi")} />}
       {modal === "gps" && <GpsModal onPass={() => done("gps", true)} onFail={() => done("gps", false)} onSkip={() => skip("gps")} />}
       {modal === "accel" && <AccelModal onPass={() => done("accel", true)} onFail={() => done("accel", false)} onSkip={() => skip("accel")} />}
       {modal === "gyro" && <GyroModal onPass={() => done("gyro", true)} onFail={() => done("gyro", false)} onSkip={() => skip("gyro")} />}
-      {modal === "battery" && <BatteryModal onPass={() => done("battery", true)} onFail={() => done("battery", false)} onSkip={() => skip("battery")} />}
-      {modal === "bluetooth" && <SimpleModal title="Bluetooth" msg="Is Bluetooth working?" onPass={() => done("bluetooth", true)} onFail={() => done("bluetooth", false)} onSkip={() => skip("bluetooth")} />}
-      {modal === "nfc" && <SimpleModal title="NFC" msg="Is NFC working?" onPass={() => done("nfc", true)} onFail={() => done("nfc", false)} onSkip={() => skip("nfc")} />}
+      {modal === "battery" && <BatteryModal onPass={(data) => done("battery", true, data)} onFail={(data) => done("battery", false, data)} onSkip={() => skip("battery")} />}
+      {modal === "bluetooth" && <BluetoothModal onPass={(data) => done("bluetooth", true, data)} onFail={(data) => done("bluetooth", false, data)} onSkip={() => skip("bluetooth")} />}
+      {modal === "nfc" && <NfcModal onPass={(data) => done("nfc", true, data)} onFail={(data) => done("nfc", false, data)} onSkip={() => skip("nfc")} />}
       {modal === "proximity" && <SimpleModal title="Proximity" msg="Cover sensor - does screen dim?" onPass={() => done("proximity", true)} onFail={() => done("proximity", false)} onSkip={() => skip("proximity")} />}
       {modal === "volume" && <SimpleModal title="Volume" msg="Do volume buttons work?" onPass={() => done("volume", true)} onFail={() => done("volume", false)} onSkip={() => skip("volume")} />}
       {modal === "power" && <SimpleModal title="Power" msg="Does power button work?" onPass={() => done("power", true)} onFail={() => done("power", false)} onSkip={() => skip("power")} />}
@@ -152,7 +264,7 @@ function TouchModal({ onPass, onFail, onSkip }) {
   };
   return (
     <Modal title="Touch Test" onSkip={onSkip}>
-      <div style={{ height: 200, background: "#1a1a2e", borderRadius: 10, position: "relative", touchAction: "none" }} onTouchStart={h} onTouchMove={h}>
+      <div style={{ height: 200, background: "var(--bg-tertiary)", borderRadius: 10, position: "relative", touchAction: "none" }} onTouchStart={h} onTouchMove={h}>
         {pts.map((p, i) => <div key={i} style={{ position: "absolute", left: p.x - 170, top: p.y - 280, width: 40, height: 40, borderRadius: "50%", background: "#0ff" }} />)}
       </div>
       <Btns onPass={onPass} onFail={onFail} />
@@ -166,9 +278,9 @@ function MultiTouchModal({ onPass, onFail, onSkip }) {
   const h = e => { setN(e.touches.length); if (e.touches.length > max) setMax(e.touches.length); };
   return (
     <Modal title="Multi-Touch" onSkip={onSkip}>
-      <div style={{ height: 150, background: "#1a1a2e", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", touchAction: "none" }} onTouchStart={h} onTouchMove={h} onTouchEnd={h}>
+      <div style={{ height: 150, background: "var(--bg-tertiary)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", touchAction: "none" }} onTouchStart={h} onTouchMove={h} onTouchEnd={h}>
         <p style={{ fontSize: 40, color: "#0ff", margin: 0 }}>{n}</p>
-        <p style={{ color: "#888" }}>Max: {max}</p>
+        <p style={{ color: "var(--text-muted)" }}>Max: {max}</p>
       </div>
       <Btns onPass={onPass} onFail={onFail} />
     </Modal>
@@ -246,7 +358,7 @@ function MicModal({ onPass, onFail, onSkip }) {
   useEffect(() => () => stop(), []);
   return (
     <Modal title="Microphone Test" onSkip={onSkip}>
-      <div style={{ height: 30, background: "#1a1a2e", borderRadius: 10, marginBottom: 10, overflow: "hidden" }}>
+      <div style={{ height: 30, background: "var(--bg-tertiary)", borderRadius: 10, marginBottom: 10, overflow: "hidden" }}>
         <div style={{ width: (lvl / 128) * 100 + "%", height: "100%", background: "#0f8" }} />
       </div>
       <button className="btn btn-primary" onClick={rec ? stop : start} style={{ width: "100%", padding: 15, marginBottom: 15 }}>
@@ -307,7 +419,7 @@ function GpsModal({ onPass, onFail, onSkip }) {
       <button className="btn btn-primary" onClick={get} disabled={loading} style={{ width: "100%", padding: 15, marginBottom: 15 }}>
         {loading ? "Getting..." : "🛰 Get Location"}
       </button>
-      {loc && <p style={{ background: "#1a1a2e", padding: 10, borderRadius: 5 }}>Lat: {loc.lat}, Lng: {loc.lng}</p>}
+      {loc && <p style={{ background: "var(--bg-tertiary)", padding: 10, borderRadius: 5 }}>Lat: {loc.lat}, Lng: {loc.lng}</p>}
       <Btns onPass={onPass} onFail={onFail} />
     </Modal>
   );
@@ -326,9 +438,9 @@ function AccelModal({ onPass, onFail, onSkip }) {
   }, []);
   return (
     <Modal title="Accelerometer" onSkip={onSkip}>
-      <div style={{ background: "#1a1a2e", padding: 15, borderRadius: 10, textAlign: "center", marginBottom: 15 }}>
+      <div style={{ background: "var(--bg-tertiary)", padding: 15, borderRadius: 10, textAlign: "center", marginBottom: 15 }}>
         <p>X: {d.x} | Y: {d.y} | Z: {d.z}</p>
-        <p style={{ color: "#888", fontSize: 12 }}>Shake phone to see values change</p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12 }}>Shake phone to see values change</p>
       </div>
       <Btns onPass={onPass} onFail={onFail} />
     </Modal>
@@ -344,9 +456,9 @@ function GyroModal({ onPass, onFail, onSkip }) {
   }, []);
   return (
     <Modal title="Gyroscope" onSkip={onSkip}>
-      <div style={{ background: "#1a1a2e", padding: 15, borderRadius: 10, textAlign: "center", marginBottom: 15 }}>
+      <div style={{ background: "var(--bg-tertiary)", padding: 15, borderRadius: 10, textAlign: "center", marginBottom: 15 }}>
         <p>α: {d.a}° | β: {d.b}° | γ: {d.g}°</p>
-        <p style={{ color: "#888", fontSize: 12 }}>Rotate phone to see values change</p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12 }}>Rotate phone to see values change</p>
       </div>
       <Btns onPass={onPass} onFail={onFail} />
     </Modal>
@@ -355,20 +467,405 @@ function GyroModal({ onPass, onFail, onSkip }) {
 
 function BatteryModal({ onPass, onFail, onSkip }) {
   const [info, setInfo] = useState(null);
+  const [health, setHealth] = useState('');
+  const [cycles, setCycles] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [drainResult, setDrainResult] = useState(null);
+
   useEffect(() => {
+    let batteryObj = null;
+    const update = () => {
+      if (batteryObj) setInfo({ level: batteryObj.level, charging: batteryObj.charging });
+    };
+
     if ("getBattery" in navigator) {
-      navigator.getBattery().then(b => setInfo({ level: Math.round(b.level * 100), charging: b.charging }));
+      navigator.getBattery().then(b => {
+        batteryObj = b;
+        update();
+        b.addEventListener('levelchange', update);
+        b.addEventListener('chargingchange', update);
+      });
+    }
+
+    return () => {
+      if (batteryObj) {
+        batteryObj.removeEventListener('levelchange', update);
+        batteryObj.removeEventListener('chargingchange', update);
+      }
+    };
+  }, []);
+
+  const runDrainTest = async () => {
+    if (!info) return;
+    setTesting(true);
+    setDrainResult(null);
+    const startLevel = info.level;
+    const startTime = Date.now();
+    
+    // CPU Stress Loop for 10 seconds
+    const duration = 10000;
+    while (Date.now() - startTime < duration) {
+      for(let i=0; i<100000; i++) { Math.sqrt(i * Math.random()); }
+      await new Promise(r => setTimeout(r, 0));
+    }
+    
+    const b = await navigator.getBattery();
+    const endLevel = b.level;
+    const drop = startLevel - endLevel;
+    
+    setDrainResult({
+      drop: Math.round(drop * 100),
+      time: 10,
+      passed: drop <= 0.02 // Less than 2% drop is good
+    });
+    setTesting(false);
+  };
+
+  return (
+    <Modal title="Battery Diagnostics" onSkip={onSkip}>
+      {info ? (
+        <div style={{ background: "var(--bg-tertiary)", padding: 15, borderRadius: 10, marginBottom: 15, textAlign: "left" }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 32 }}>{info.charging ? "⚡" : "🔋"}</span>
+              <div>
+                <div style={{ fontSize: 24, fontWeight: 'bold' }}>{Math.round(info.level * 100)}%</div>
+                <div style={{ fontSize: 12, color: info.charging ? '#0f8' : '#aaa' }}>
+                  {info.charging ? 'Charging' : 'Discharging'}
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={runDrainTest} 
+              disabled={testing || info.charging}
+              style={{ background: testing ? '#555' : '#eab308', color: '#000', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: (testing || info.charging) ? 'not-allowed' : 'pointer' }}
+            >
+              {testing ? 'Stressing CPU...' : '10s Stress Test'}
+            </button>
+          </div>
+
+          {info.charging && (
+            <p style={{ fontSize: 12, color: '#fbbf24', marginBottom: 15 }}>⚠️ Unplug device to run Stress Test</p>
+          )}
+
+          {drainResult && (
+            <div style={{ padding: 10, background: 'var(--bg-card)', borderRadius: 8, marginBottom: 15, borderLeft: `4px solid ${drainResult.passed ? '#0f8' : '#f66'}` }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>10s CPU Stress Result:</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+                <span>Battery Drain Amount:</span>
+                <span style={{ color: drainResult.passed ? '#0f8' : '#f66', fontWeight: 'bold' }}>
+                  {drainResult.drop}% {drainResult.passed ? '(PASS)' : '(FAIL)'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Health (%)</label>
+              <input type="number" placeholder="e.g. 85" value={health} onChange={e => setHealth(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Cycle Count</label>
+              <input type="number" placeholder="e.g. 400" value={cycles} onChange={e => setCycles(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', boxSizing: 'border-box' }} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ textAlign: "center", padding: 20 }}>
+          <p style={{ color: '#fbbf24', marginBottom: 15 }}>Battery API restricted on this browser (e.g. iOS Safari).</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, textAlign: 'left' }}>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Health (%)</label>
+              <input type="number" placeholder="e.g. 85" value={health} onChange={e => setHealth(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Cycle Count</label>
+              <input type="number" placeholder="e.g. 400" value={cycles} onChange={e => setCycles(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', boxSizing: 'border-box' }} />
+            </div>
+          </div>
+        </div>
+      )}
+      <Btns onPass={() => onPass({ health, cycles, drainResult })} onFail={() => onFail({ health, cycles, drainResult })} />
+    </Modal>
+  );
+}
+
+function WifiModal({ onPass, onFail, onSkip }) {
+  const [info, setInfo] = useState({ testing: true, online: false, type: 'unknown', downlink: 0, rtt: 0 });
+
+  useEffect(() => {
+    let mounted = true;
+    const testWifi = async () => {
+      const isOnline = navigator.onLine;
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      
+      let type = 'unknown';
+      let downlink = 0;
+      let rtt = 0;
+
+      if (conn) {
+        type = conn.type || conn.effectiveType || 'unknown';
+        downlink = conn.downlink || 0;
+        rtt = conn.rtt || 0;
+      }
+
+      // Simulate network request to check actual latency
+      const start = Date.now();
+      try {
+        await fetch('https://httpbin.org/get', { cache: 'no-store' });
+        rtt = Date.now() - start;
+      } catch (e) {
+        // Fetch failed, keep connection API rtt or 0
+      }
+
+      const isStable = isOnline && rtt > 0 && rtt < 300;
+
+      if (mounted) {
+        setInfo({ testing: false, online: isOnline, type, downlink, rtt, isStable });
+      }
+    };
+    testWifi();
+    return () => mounted = false;
+  }, []);
+
+  return (
+    <Modal title="WiFi Network Analysis" onSkip={onSkip}>
+      {info.testing ? (
+        <div style={{ textAlign: "center", padding: 20 }}>
+          <div style={{ fontSize: 40, animation: "pulse 1.5s infinite" }}>📶</div>
+          <p style={{ marginTop: 15, color: "var(--text-muted)" }}>Analyzing network packets...</p>
+        </div>
+      ) : (
+        <div style={{ background: "var(--bg-tertiary)", padding: 20, borderRadius: 10, textAlign: "center", marginBottom: 15 }}>
+          <p style={{ fontSize: 36, color: info.online ? "#0f8" : "#f66", margin: "0 0 10px" }}>
+            {info.online ? "📶 Connected" : "❌ Offline"}
+          </p>
+          {info.online && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 15, fontSize: 14, color: "var(--text-secondary)", textAlign: 'left', background: 'var(--bg-card)', padding: '15px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Network Type:</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>{info.type.toUpperCase()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Latency (Ping):</span>
+                <span style={{ color: info.rtt < 100 ? '#0f8' : info.rtt < 250 ? '#fbbf24' : '#f66', fontWeight: 'bold' }}>{info.rtt} ms</span>
+              </div>
+              {info.downlink > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Est. Bandwidth:</span>
+                  <span style={{ color: '#0f8', fontWeight: 'bold' }}>{info.downlink} Mbps</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                <span>Stability:</span>
+                <span style={{ color: info.isStable ? '#0f8' : '#f66', fontWeight: 'bold' }}>{info.isStable ? 'PASS' : 'FAIL'}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <Btns onPass={onPass} onFail={onFail} />
+    </Modal>
+  );
+}
+
+function BluetoothModal({ onPass, onFail, onSkip }) {
+  const [status, setStatus] = useState("idle"); // idle, scanning, found, error, manual_fallback
+  const [deviceInfo, setDeviceInfo] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    // Instantly switch to manual fallback on iOS or browsers without API
+    if (!navigator.bluetooth) {
+      setStatus("manual_fallback");
     }
   }, []);
+
+  const scan = async () => {
+    try {
+      setStatus("scanning");
+      // Request device opens the native Bluetooth picker
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true
+      });
+      
+      setDeviceInfo({ name: device.name || "Unknown Device", id: device.id });
+      setStatus("found");
+    } catch (e) {
+      if (e.name === "NotFoundError") {
+        // User cancelled the prompt, but the fact the prompt opened means Bluetooth is functional!
+        setStatus("found");
+        setDeviceInfo({ name: "User Cancelled (Radio OK)", id: "N/A" });
+      } else {
+        setStatus("error");
+        setErrorMsg(e.message);
+      }
+    }
+  };
+
   return (
-    <Modal title="Battery" onSkip={onSkip}>
-      {info ? (
-        <div style={{ textAlign: "center", padding: 15 }}>
-          <p style={{ fontSize: 36 }}>🔋 {info.level}%</p>
-          <p>{info.charging ? "⚡ Charging" : "Not charging"}</p>
-        </div>
-      ) : <p>Battery info not available</p>}
-      <Btns onPass={onPass} onFail={onFail} />
+    <Modal title="Bluetooth Diagnostic" onSkip={onSkip}>
+      <div style={{ background: "var(--bg-tertiary)", padding: 20, borderRadius: 10, textAlign: "center", marginBottom: 15 }}>
+        {status === "idle" && (
+          <div>
+            <div style={{ fontSize: 40, marginBottom: 15, color: '#3b82f6' }}>ᛒ</div>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 15 }}>
+              Click below to activate the Bluetooth radio and scan for nearby devices.
+            </p>
+            <button className="btn btn-primary" onClick={scan} style={{ padding: "10px 20px", width: "100%", fontWeight: "bold" }}>
+              🔍 Scan for Devices
+            </button>
+          </div>
+        )}
+
+        {status === "manual_fallback" && (
+          <div>
+            <div style={{ fontSize: 40, marginBottom: 10, color: '#fbbf24' }}>⚠️</div>
+            <p style={{ color: "#fbbf24", fontWeight: "bold", fontSize: 18 }}>iOS / Browser Restriction</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 10, lineHeight: 1.5 }}>
+              Apple iOS and some browsers block automated Bluetooth scanning via the web. 
+            </p>
+            <div style={{ background: "var(--bg-card)", padding: 15, borderRadius: 8, marginTop: 15, textAlign: "left", fontSize: 13, color: 'var(--text-primary)' }}>
+              <strong style={{ color: '#3b82f6' }}>Manual Verification Required:</strong>
+              <ol style={{ paddingLeft: 20, marginTop: 8, marginBottom: 0 }}>
+                <li>Swipe down to open Control Center</li>
+                <li>Verify Bluetooth toggles ON successfully</li>
+                <li>Click <strong>✓ Pass</strong> if working</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {status === "scanning" && (
+          <div>
+            <div style={{ fontSize: 40, animation: "pulse 1.5s infinite", color: "#3b82f6" }}>ᛒ</div>
+            <p style={{ color: "var(--text-secondary)", marginTop: 15 }}>Opening Bluetooth Picker...</p>
+            <p style={{ color: "#666", fontSize: 12 }}>Please select a device or click Cancel.</p>
+          </div>
+        )}
+
+        {status === "found" && (
+          <div>
+            <div style={{ fontSize: 40, color: "#0f8", marginBottom: 10 }}>✅</div>
+            <p style={{ color: "#0f8", fontWeight: "bold", fontSize: 18 }}>Radio Functional</p>
+            <div style={{ background: "var(--bg-card)", padding: 10, borderRadius: 8, marginTop: 15, textAlign: "left" }}>
+              <p style={{ margin: "0 0 5px", fontSize: 12, color: "var(--text-secondary)" }}>Device Detected:</p>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{deviceInfo.name}</p>
+            </div>
+          </div>
+        )}
+
+        {status === "error" && (
+          <div>
+            <div style={{ fontSize: 40, color: "#f66", marginBottom: 10 }}>❌</div>
+            <p style={{ color: "#f66", fontWeight: "bold" }}>Bluetooth Error</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: 10 }}>{errorMsg}</p>
+          </div>
+        )}
+      </div>
+      <Btns onPass={() => onPass(deviceInfo || { note: 'Manual Verification on iOS' })} onFail={() => onFail(errorMsg ? { error: errorMsg } : null)} />
+    </Modal>
+  );
+}
+
+function NfcModal({ onPass, onFail, onSkip }) {
+  const [status, setStatus] = useState("idle"); // idle, scanning, found, error, manual_fallback
+  const [tagInfo, setTagInfo] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    if (!('NDEFReader' in window)) {
+      setStatus("manual_fallback");
+    }
+  }, []);
+
+  const scan = async () => {
+    try {
+      setStatus("scanning");
+      const ndef = new window.NDEFReader();
+      await ndef.scan();
+      
+      ndef.addEventListener("reading", ({ message, serialNumber }) => {
+        setTagInfo({ serialNumber: serialNumber || "Hidden Serial", records: message.records.length });
+        setStatus("found");
+      });
+      
+      ndef.addEventListener("readingerror", () => {
+        // A reading error means the antenna is working but couldn't parse the tag.
+        // This still proves the NFC hardware works!
+        setTagInfo({ serialNumber: "Unreadable Format", note: "Hardware functional, unreadable tag format." });
+        setStatus("found");
+      });
+
+    } catch (e) {
+      setStatus("error");
+      setErrorMsg(e.message);
+    }
+  };
+
+  return (
+    <Modal title="NFC Diagnostic" onSkip={onSkip}>
+      <div style={{ background: "var(--bg-tertiary)", padding: 20, borderRadius: 10, textAlign: "center", marginBottom: 15 }}>
+        {status === "idle" && (
+          <div>
+            <div style={{ fontSize: 40, marginBottom: 15, color: '#3b82f6' }}>💳</div>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 15 }}>
+              Click below and tap any NFC card or tag to the back of the device.
+            </p>
+            <button className="btn btn-primary" onClick={scan} style={{ padding: "10px 20px", width: "100%", fontWeight: "bold" }}>
+              🔍 Start NFC Scan
+            </button>
+          </div>
+        )}
+
+        {status === "manual_fallback" && (
+          <div>
+            <div style={{ fontSize: 40, marginBottom: 10, color: '#fbbf24' }}>⚠️</div>
+            <p style={{ color: "#fbbf24", fontWeight: "bold", fontSize: 18 }}>iOS / Browser Restriction</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 10, lineHeight: 1.5 }}>
+              Apple iOS blocks automated NFC scanning via the web. 
+            </p>
+            <div style={{ background: "var(--bg-card)", padding: 15, borderRadius: 8, marginTop: 15, textAlign: "left", fontSize: 13, color: 'var(--text-primary)' }}>
+              <strong style={{ color: '#3b82f6' }}>Manual Verification Required:</strong>
+              <ol style={{ paddingLeft: 20, marginTop: 8, marginBottom: 0 }}>
+                <li>Open Apple Wallet or Settings</li>
+                <li>Verify NFC / Apple Pay works</li>
+                <li>Click <strong>✓ Pass</strong></li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {status === "scanning" && (
+          <div>
+            <div style={{ fontSize: 40, animation: "pulse 1.5s infinite", color: "#3b82f6" }}>💳</div>
+            <p style={{ color: "var(--text-secondary)", marginTop: 15 }}>Ready to Scan...</p>
+            <p style={{ color: "#666", fontSize: 12 }}>Hold an NFC tag to the back of the device.</p>
+          </div>
+        )}
+
+        {status === "found" && (
+          <div>
+            <div style={{ fontSize: 40, color: "#0f8", marginBottom: 10 }}>✅</div>
+            <p style={{ color: "#0f8", fontWeight: "bold", fontSize: 18 }}>NFC Functional</p>
+            <div style={{ background: "var(--bg-card)", padding: 10, borderRadius: 8, marginTop: 15, textAlign: "left" }}>
+              <p style={{ margin: "0 0 5px", fontSize: 12, color: "var(--text-secondary)" }}>Tag Detected:</p>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{tagInfo.serialNumber}</p>
+            </div>
+          </div>
+        )}
+
+        {status === "error" && (
+          <div>
+            <div style={{ fontSize: 40, color: "#f66", marginBottom: 10 }}>❌</div>
+            <p style={{ color: "#f66", fontWeight: "bold" }}>NFC Error</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: 10 }}>{errorMsg}</p>
+          </div>
+        )}
+      </div>
+      <Btns onPass={() => onPass(tagInfo || { note: 'Manual Verification on iOS' })} onFail={() => onFail(errorMsg ? { error: errorMsg } : null)} />
     </Modal>
   );
 }

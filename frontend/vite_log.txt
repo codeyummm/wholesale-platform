@@ -1,0 +1,541 @@
+
+> wholesale-frontend@1.0.0 dev
+> vite
+
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+Port 5175 is in use, trying another one...
+Port 5176 is in use, trying another one...
+
+  VITE v5.4.21  ready in 190 ms
+
+  ➜  Local:   http://localhost:5177/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+11:56:58 PM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+11:57:39 PM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+11:58:22 PM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+12:04:51 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+12:05:19 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+12:57:34 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+12:58:14 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:01:21 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:06:27 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:07:30 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:08:01 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:18:28 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:26:03 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:31:39 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:42:14 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:43:31 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:43:45 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:45:11 AM [vite] Internal server error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+  Plugin: vite:react-babel
+  File: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx:901:4
+  899|          )}
+  900|        </div>
+  901|      </div>
+     |      ^
+  902|    );
+  903|  }
+      at constructor (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12483:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11665:28)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11321:23)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOpBaseRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10976:34)
+      at JSXParserMixin.parseExprOpRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10971:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10937:27)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10898:17)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at JSXParserMixin.parseExpressionBase (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10774:23)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:17)
+      at JSXParserMixin.jsxParseExpressionContainer (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+1:45:11 AM [vite] Internal server error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+  Plugin: vite:react-babel
+  File: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx:901:4
+  899|          )}
+  900|        </div>
+  901|      </div>
+     |      ^
+  902|    );
+  903|  }
+      at constructor (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12483:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11665:28)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11321:23)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOpBaseRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10976:34)
+      at JSXParserMixin.parseExprOpRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10971:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10937:27)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10898:17)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at JSXParserMixin.parseExpressionBase (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10774:23)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:17)
+      at JSXParserMixin.jsxParseExpressionContainer (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+1:45:11 AM [vite] Internal server error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+  Plugin: vite:react-babel
+  File: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx:901:4
+  899|          )}
+  900|        </div>
+  901|      </div>
+     |      ^
+  902|    );
+  903|  }
+      at constructor (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12483:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11665:28)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11321:23)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOpBaseRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10976:34)
+      at JSXParserMixin.parseExprOpRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10971:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10937:27)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10898:17)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at JSXParserMixin.parseExpressionBase (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10774:23)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:17)
+      at JSXParserMixin.jsxParseExpressionContainer (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+1:45:17 AM [vite] Pre-transform error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+1:45:22 AM [vite] Internal server error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+  Plugin: vite:react-babel
+  File: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx:901:4
+  899|          )}
+  900|        </div>
+  901|      </div>
+     |      ^
+  902|    );
+  903|  }
+      at constructor (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12483:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11665:28)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11321:23)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOpBaseRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10976:34)
+      at JSXParserMixin.parseExprOpRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10971:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10937:27)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10898:17)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at JSXParserMixin.parseExpressionBase (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10774:23)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:17)
+      at JSXParserMixin.jsxParseExpressionContainer (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+1:46:15 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:46:15 AM [vite] Pre-transform error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+1:46:15 AM [vite] Internal server error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+  Plugin: vite:react-babel
+  File: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx:901:4
+  899|          )}
+  900|        </div>
+  901|      </div>
+     |      ^
+  902|    );
+  903|  }
+      at constructor (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12483:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11665:28)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11321:23)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOpBaseRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10976:34)
+      at JSXParserMixin.parseExprOpRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10971:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10937:27)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10898:17)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at JSXParserMixin.parseExpressionBase (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10774:23)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:17)
+      at JSXParserMixin.jsxParseExpressionContainer (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+1:46:39 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:46:39 AM [vite] Pre-transform error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+1:46:39 AM [vite] Internal server error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+  Plugin: vite:react-babel
+  File: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx:901:4
+  899|          )}
+  900|        </div>
+  901|      </div>
+     |      ^
+  902|    );
+  903|  }
+      at constructor (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12483:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11665:28)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11321:23)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOpBaseRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10976:34)
+      at JSXParserMixin.parseExprOpRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10971:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10937:27)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10898:17)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at JSXParserMixin.parseExpressionBase (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10774:23)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:17)
+      at JSXParserMixin.jsxParseExpressionContainer (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+1:47:18 AM [vite] Internal server error: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (901:4)
+
+  899 |         )}
+  900 |       </div>
+> 901 |     </div>
+      |     ^
+  902 |   );
+  903 | }
+  904 |
+  Plugin: vite:react-babel
+  File: /Users/deepakmalik/Downloads/wholesale-platform1/frontend/src/components/Inventory/InventoryList.jsx:901:4
+  899|          )}
+  900|        </div>
+  901|      </div>
+     |      ^
+  902|    );
+  903|  }
+      at constructor (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at JSXParserMixin.raise (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12483:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11665:28)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11321:23)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOpBaseRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10976:34)
+      at JSXParserMixin.parseExprOpRightExpr (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10971:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10937:27)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOp (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10943:21)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10898:17)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at JSXParserMixin.parseExpressionBase (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10774:23)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseExpression (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10770:17)
+      at JSXParserMixin.jsxParseExpressionContainer (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11071:23)
+      at JSXParserMixin.parseUpdate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11056:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:11036:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10889:61)
+      at JSXParserMixin.parseExprOps (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10894:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10871:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10821:21)
+      at /Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:39
+      at JSXParserMixin.allowInAnd (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:12416:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/deepakmalik/Downloads/wholesale-platform1/frontend/node_modules/@babel/parser/lib/index.js:10790:17)
+1:51:26 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:58:41 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:33:08 PM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:23:51 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:37:19 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:40:10 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:42:43 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:50:37 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:54:50 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+1:54:52 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+2:05:58 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css
+2:06:17 AM [vite] hmr update /src/components/Inventory/InventoryList.jsx, /src/index.css

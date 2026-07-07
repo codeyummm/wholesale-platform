@@ -20,6 +20,21 @@ router.post('/', async (req, res) => {
     });
 
     const savedTest = await deviceTest.save();
+    
+    // Link to inventory
+    const Inventory = require('../models/Inventory');
+    if (inventoryId) {
+      await Inventory.updateOne(
+        { _id: inventoryId, 'devices._id': deviceId },
+        { $push: { 'devices.$.testResults': savedTest._id } }
+      );
+    } else if (imei) {
+      await Inventory.updateOne(
+        { 'devices.imei': imei },
+        { $push: { 'devices.$.testResults': savedTest._id } }
+      );
+    }
+
     res.status(201).json({
       success: true,
       data: savedTest,
@@ -107,7 +122,28 @@ router.get('/stats/summary', async (req, res) => {
 // @desc    Get tests for a specific IMEI
 router.get('/imei/:imei', async (req, res) => {
   try {
-    const tests = await DeviceTest.find({ imei: req.params.imei }).sort({ createdAt: -1 });
+    const tests = await DeviceTest.find({ imei: req.params.imei }).sort({ createdAt: -1 }).lean();
+    
+    // Attach inventory data to the latest test
+    if (tests.length > 0) {
+      const Inventory = require('../models/Inventory');
+      const inventoryItem = await Inventory.findOne({ 'devices.imei': req.params.imei }).lean();
+      if (inventoryItem) {
+        const device = inventoryItem.devices.find(d => d.imei === req.params.imei);
+        const inventoryInfo = {
+          model: inventoryItem.model,
+          brand: inventoryItem.brand,
+          storage: inventoryItem.specifications?.storage,
+          color: inventoryItem.specifications?.color,
+          condition: device?.condition,
+          grade: device?.grade,
+          unlockStatus: device?.unlockStatus,
+          labData: device?.labData
+        };
+        tests[0].inventoryInfo = inventoryInfo;
+      }
+    }
+
     res.json({ success: true, data: tests, count: tests.length });
   } catch (error) {
     console.error('Error fetching device tests:', error);
@@ -119,10 +155,33 @@ router.get('/imei/:imei', async (req, res) => {
 // @desc    Get a single device test by ID
 router.get('/:id', async (req, res) => {
   try {
-    const deviceTest = await DeviceTest.findById(req.params.id);
+    const deviceTest = await DeviceTest.findById(req.params.id).lean();
     if (!deviceTest) {
       return res.status(404).json({ success: false, error: 'Device test not found' });
     }
+
+    const Inventory = require('../models/Inventory');
+    let inventoryItem = null;
+    if (deviceTest.inventoryId) {
+      inventoryItem = await Inventory.findById(deviceTest.inventoryId).lean();
+    } else if (deviceTest.imei) {
+      inventoryItem = await Inventory.findOne({ 'devices.imei': deviceTest.imei }).lean();
+    }
+
+    if (inventoryItem) {
+      const device = inventoryItem.devices.find(d => d.imei === deviceTest.imei);
+      deviceTest.inventoryInfo = {
+        model: inventoryItem.model,
+        brand: inventoryItem.brand,
+        storage: inventoryItem.specifications?.storage,
+        color: inventoryItem.specifications?.color,
+        condition: device?.condition,
+        grade: device?.grade,
+        unlockStatus: device?.unlockStatus,
+        labData: device?.labData
+      };
+    }
+
     res.json({ success: true, data: deviceTest });
   } catch (error) {
     console.error('Error fetching device test:', error);

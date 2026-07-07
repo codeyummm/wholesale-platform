@@ -1,4 +1,5 @@
 const Customer = require('../models/Customer');
+const Sale = require('../models/Sale');
 
 exports.getCustomers = async (req, res) => {
   try {
@@ -6,12 +7,27 @@ exports.getCustomers = async (req, res) => {
     const query = {};
 
     if (search) {
+      // Find matching sales by order number or IMEI
+      const salesMatches = await Sale.find({
+        $or: [
+          { saleNumber: { $regex: search, $options: 'i' } },
+          { 'items.imei': { $regex: search, $options: 'i' } }
+        ]
+      }).select('customer');
+      
+      const saleCustomerIds = salesMatches.map(s => s.customer).filter(Boolean);
+
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { company: { $regex: search, $options: 'i' } },
         { 'contact.email': { $regex: search, $options: 'i' } },
-        { 'contact.phone': { $regex: search, $options: 'i' } }
+        { 'contact.phone': { $regex: search, $options: 'i' } },
+        { $expr: { $regexMatch: { input: { $toString: "$_id" }, regex: search, options: "i" } } }
       ];
+
+      if (saleCustomerIds.length > 0) {
+        query.$or.push({ _id: { $in: saleCustomerIds } });
+      }
     }
     if (type) query.type = type;
 

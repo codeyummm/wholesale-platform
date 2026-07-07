@@ -581,7 +581,7 @@ const InvoicesPage = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>Quantity</label>
                   <input
@@ -601,6 +601,17 @@ const InvoicesPage = () => {
                     style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
                   />
                 </div>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>IMEIs (Comma or newline separated)</label>
+                <textarea
+                  rows="4"
+                  value={editProduct.imeis ? editProduct.imeis.join('\n') : ''}
+                  onChange={(e) => setEditProduct({ ...editProduct, imeis: e.target.value.split(/[\n,]+/).map(i => i.trim()).filter(Boolean) })}
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                  placeholder="Paste IMEIs here..."
+                />
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>

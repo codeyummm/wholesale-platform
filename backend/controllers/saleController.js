@@ -36,12 +36,15 @@ exports.updateSaleCustomer = async (req, res) => {
 
 exports.getSales = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, status, channel, startDate, endDate } = req.query;
+    const { page = 1, limit = 20, search, status, deliveryStatus, channel, startDate, endDate, customerId } = req.query;
     const query = {};
+
+    if (customerId) query.customer = customerId;
 
     if (search) {
       query.$or = [
         { saleNumber: { $regex: search, $options: 'i' } },
+        { externalOrderId: { $regex: search, $options: 'i' } },
         { customerName: { $regex: search, $options: 'i' } },
         { salesChannel: { $regex: search, $options: 'i' } },
         { status: { $regex: search, $options: 'i' } },
@@ -53,6 +56,7 @@ exports.getSales = async (req, res) => {
     }
     if (channel) query.salesChannel = channel;
     if (status) query.status = status;
+    if (deliveryStatus) query.deliveryStatus = deliveryStatus;
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -90,7 +94,7 @@ exports.getSale = async (req, res) => {
 
 exports.createSale = async (req, res) => {
   try {
-    const { customerId, customerName, items, discount, tax, paymentMethod, paymentStatus, amountPaid, notes, salesChannel, shipping, costs } = req.body;
+    const { customerId, customerName, items, discount, tax, paymentMethod, paymentStatus, status, amountPaid, notes, salesChannel, shipping, costs } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'At least one item is required' });
@@ -151,6 +155,7 @@ exports.createSale = async (req, res) => {
       tax: tax || 0,
       paymentMethod: paymentMethod || 'cash',
       paymentStatus: paymentStatus || 'paid',
+      status: status || 'completed',
       amountPaid: amountPaid || 0,
       salesChannel: salesChannel || 'in_store',
       shipping: shipping || {},
@@ -174,16 +179,31 @@ exports.updateSale = async (req, res) => {
     if (!oldSale) return res.status(404).json({ success: false, message: 'Sale not found' });
     
 
-    // Recalculate subtotal and totals if items changed
-    if (req.body.items) {
-      req.body.subtotal = req.body.items.reduce((sum, item) => sum + (item.salePrice || 0), 0);
-      req.body.totalAmount = req.body.subtotal - (req.body.discount || 0) + (req.body.tax || 0);
-      
-      const totalCost = req.body.items.reduce((sum, item) => sum + (item.costPrice || 0), 0);
-      const grossProfit = req.body.subtotal - totalCost;
-      const totalExpenses = (req.body.costs?.marketplaceFees || 0) + (req.body.costs?.handling || 0) + (req.body.costs?.packaging || 0) + (req.body.costs?.other || 0) + (req.body.shipping?.shippingCost || 0);
-      req.body.totalProfit = grossProfit - totalExpenses - (req.body.discount || 0);
-    }
+    // Recalculate totals unconditionally merging old and new data
+    const items = req.body.items || oldSale.items || [];
+    const discount = req.body.discount !== undefined ? req.body.discount : (oldSale.discount || 0);
+    const tax = req.body.tax !== undefined ? req.body.tax : (oldSale.tax || 0);
+    
+    const oldCosts = oldSale.costs ? oldSale.costs.toObject ? oldSale.costs.toObject() : oldSale.costs : {};
+    const newCosts = req.body.costs || {};
+    const costs = { ...oldCosts, ...newCosts };
+
+    const oldShipping = oldSale.shipping ? oldSale.shipping.toObject ? oldSale.shipping.toObject() : oldSale.shipping : {};
+    const newShipping = req.body.shipping || {};
+    const shipping = { ...oldShipping, ...newShipping };
+
+    req.body.subtotal = items.reduce((sum, item) => sum + (item.salePrice || 0), 0);
+    req.body.totalAmount = req.body.subtotal - discount + tax + (shipping.shippingCollected || 0);
+    
+    const totalCost = items.reduce((sum, item) => sum + (item.costPrice || 0), 0);
+    const grossProfit = req.body.subtotal - totalCost;
+    const totalExpenses = (costs.marketplaceFees || 0) + 
+                         (costs.handling || 0) + 
+                         (costs.packaging || 0) + 
+                         (costs.other || 0) + 
+                         (shipping.shippingCost || 0);
+                         
+    req.body.totalProfit = grossProfit + (shipping.shippingCollected || 0) - totalExpenses - discount;
 
     // Track detailed changes
     const changes = [];
@@ -238,7 +258,7 @@ exports.updateSale = async (req, res) => {
       changes.push(`Payment Method: ${oldSale.paymentMethod} → ${req.body.paymentMethod}`);
     }
     if (req.body.paymentStatus && req.body.paymentStatus !== oldSale.paymentStatus) {
-      changes.push(`Payment Status: ${omentStatus} → ${req.body.paymentStatus}`);
+      changes.push(`Payment Status: ${oldSale.paymentStatus} → ${req.body.paymentStatus}`);
     }
     
     // Discount & Tax
@@ -253,32 +273,69 @@ exports.updateSale = async (req, res) => {
     if (req.body.notes && req.body.notes !== oldSale.notes) {
       changes.push(`Notes updated`);
     }
-    const changesSummary = changes.length > 0 ? changes.join(', ') : 'Sale details updated';
+    const changesSummary = changes.join(', ');
+    // Only write edit history if there are real tracked changes AND skipHistory flag is not set
+    if (!req.body.skipHistory && changes.length > 0) {
+      const editEntry = {
+        editedBy: req.user?.email || req.user?.role || 'User',
+        editedAt: new Date(),
+        changes: changesSummary
+      };
+      await Sale.findByIdAndUpdate(req.params.id, { $push: { editHistory: editEntry } });
+    }
     
-    const editEntry = {
-      editedBy: req.user?.name || 'System',
-      editedAt: new Date(),
-      changes: changesSummary
-    };
-    
-    
-    // Recalculate totals
+    // Totals are already recalculated at the top and saved in req.body
+    // Handle Inventory isSold status changes
     if (req.body.items) {
-      req.body.subtotal = req.body.items.reduce((sum, item) => sum + (item.salePrice || 0), 0);
-      req.body.totalAmount = req.body.subtotal - (req.body.discount || 0) + (req.body.tax || 0);
+      const Inventory = require('../models/Inventory');
+      const oldImeis = oldSale.items.map(i => i.imei).filter(Boolean);
+      const newImeis = req.body.items.map(i => i.imei).filter(Boolean);
       
-      const totalCost = req.body.items.reduce((sum, item) => sum + (item.costPrice || 0), 0);
-      const grossProfit = req.body.subtotal - totalCost;
-      const totalExpenses = (req.body.costs?.marketplaceFees || 0) + 
-                           (req.body.costs?.handling || 0) + 
-                           (req.body.costs?.packaging || 0) + 
-                           (req.body.costs?.other || 0) + 
-                           (req.body.shipping?.shippingCost || 0);
-      req.body.totalProfit = grossProfit - totalExpenses - (req.body.discount || 0);
+      const removedImeis = oldImeis.filter(imei => !newImeis.includes(imei));
+      const addedImeis = newImeis.filter(imei => !oldImeis.includes(imei));
+      
+      if (addedImeis.length > 0) {
+        await Inventory.updateMany(
+          { 'devices.imei': { $in: addedImeis } },
+          { 
+            $set: { 
+              'devices.$[elem].isSold': true,
+              'devices.$[elem].soldDate': new Date()
+            }
+          },
+          { arrayFilters: [{ 'elem.imei': { $in: addedImeis } }] }
+        );
+      }
+      
+      if (removedImeis.length > 0) {
+        await Inventory.updateMany(
+          { 'devices.imei': { $in: removedImeis } },
+          { 
+            $set: { 
+              'devices.$[elem].isSold': false,
+              'devices.$[elem].soldDate': null
+            }
+          },
+          { arrayFilters: [{ 'elem.imei': { $in: removedImeis } }] }
+        );
+      }
     }
 
-    await Sale.findByIdAndUpdate(req.params.id, { $push: { editHistory: editEntry } });
-    const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    console.log("UPDATE PAYLOAD SHIPPING TRACKING DATA:", req.body.shipping?.trackingData ? "YES" : "NO"); const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+
+    // Recalculate stats for the customer (handles reassignment automatically)
+    if (sale.customer) {
+      const custSales = await Sale.find({ customer: sale.customer, status: { $ne: 'cancelled' } });
+      const totalSpent = custSales.reduce((acc, s) => acc + s.totalAmount, 0);
+      const totalPurchases = custSales.length;
+      await Customer.findByIdAndUpdate(sale.customer, { totalPurchases, totalSpent });
+    }
+    if (oldSale.customer && String(oldSale.customer) !== String(sale.customer)) {
+      const oldCustSales = await Sale.find({ customer: oldSale.customer, status: { $ne: 'cancelled' } });
+      const totalSpent = oldCustSales.reduce((acc, s) => acc + s.totalAmount, 0);
+      const totalPurchases = oldCustSales.length;
+      await Customer.findByIdAndUpdate(oldSale.customer, { totalPurchases, totalSpent });
+    }
     
     // Update IMEI history for all items in the sale
     const Inventory = require('../models/Inventory');
@@ -292,7 +349,7 @@ exports.updateSale = async (req, res) => {
                 action: 'Sale Edited',
                 date: new Date(),
                 details: `Sale #${sale.saleNumber}: ${changesSummary}`,
-                user: req.user?.name || 'System'
+                user: req.user?.email || req.user?.role || 'User'
               }
             }
           }
@@ -302,7 +359,7 @@ exports.updateSale = async (req, res) => {
     
     res.json({ success: true, data: sale });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
@@ -328,6 +385,16 @@ exports.deleteSale = async (req, res) => {
     }
 
     await Sale.findByIdAndDelete(req.params.id);
+
+    // Recalculate stats for the customer
+    if (sale.customer) {
+      const Customer = require('../models/Customer');
+      const custSales = await Sale.find({ customer: sale.customer, status: { $ne: 'cancelled' } });
+      const totalSpent = custSales.reduce((acc, s) => acc + s.totalAmount, 0);
+      const totalPurchases = custSales.length;
+      await Customer.findByIdAndUpdate(sale.customer, { totalPurchases, totalSpent });
+    }
+
     res.json({ success: true, message: 'Sale deleted and inventory restored' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -340,7 +407,7 @@ exports.getSaleStats = async (req, res) => {
     today.setHours(0, 0, 0, 0);
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [todaySales, monthSales, allSales] = await Promise.all([
+    const [todaySales, monthSales, allSales, pendingChannelStats] = await Promise.all([
       Sale.aggregate([
         { $match: { createdAt: { $gte: today }, status: { $in: ['completed', 'shipped', 'delivered'] } } },
         { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 }, profit: { $sum: '$totalProfit' } } }
@@ -352,15 +419,25 @@ exports.getSaleStats = async (req, res) => {
       Sale.aggregate([
         { $match: { status: { $in: ['completed', 'shipped', 'delivered'] } } },
         { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 }, profit: { $sum: '$totalProfit' } } }
+      ]),
+      Sale.aggregate([
+        { $match: { status: 'pending' } },
+        { $group: { _id: '$salesChannel', count: { $sum: 1 } } }
       ])
     ]);
+
+    const pendingCounts = {};
+    pendingChannelStats.forEach(stat => {
+      pendingCounts[stat._id || 'other'] = stat.count;
+    });
 
     res.json({
       success: true,
       data: {
         today: todaySales[0] || { total: 0, count: 0, profit: 0 },
         thisMonth: monthSales[0] || { total: 0, count: 0, profit: 0 },
-        allTime: allSales[0] || { total: 0, count: 0, profit: 0 }
+        allTime: allSales[0] || { total: 0, count: 0, profit: 0 },
+        pendingCounts
       }
     });
   } catch (error) {

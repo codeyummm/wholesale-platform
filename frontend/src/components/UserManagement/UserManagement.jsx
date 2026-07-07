@@ -1,17 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
-import { Plus, Edit, Trash2, X, Save, Shield, User, Mail, Key, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, X, Save, Shield, User, Mail, Key, ToggleLeft, ToggleRight, CheckSquare, Square, MessageSquare } from 'lucide-react';
 
 export default function UserManagement() {
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newPassword, setNewPassword] = useState('');
-  const [formData, setFormData] = useState({ email: '', password: '', role: 'staff' });
+  
+  const initialForm = { 
+    name: '', 
+    email: '', 
+    password: '', 
+    role: 'staff',
+    permissions: { 
+      dashboard: true,
+      sales: false, 
+      salesChannels: false,
+      inventory: false, 
+      customers: false, 
+      suppliers: false,
+      invoices: false,
+      shipping: false, 
+      imeiLookup: false,
+      imeiLab: false,
+      deviceTest: false,
+      userManagement: false,
+      msg_emails: false,
+      msg_ebay: false,
+      msg_amazon: false,
+      msg_walmart: false,
+      msg_groupon: false,
+      msg_tiktok: false,
+      msg_whatnot: false,
+      msg_poshmark: false,
+      msg_mercari: false
+    }
+  };
+  const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
 
   useEffect(() => { fetchUsers(); }, []);
@@ -28,16 +61,23 @@ export default function UserManagement() {
     }
   };
 
-  const handleCreate = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await api.post('/users', formData);
+      if (isEditing) {
+        await api.put(`/users/${selectedUserId}`, {
+          name: formData.name,
+          role: formData.role,
+          permissions: formData.permissions
+        });
+      } else {
+        await api.post('/users', formData);
+      }
       setShowModal(false);
-      setFormData({ email: '', password: '', role: 'staff' });
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create user');
+      setError(err.response?.data?.message || 'Failed to save user');
     }
   };
 
@@ -82,15 +122,76 @@ export default function UserManagement() {
     }
   };
 
-  if (currentUser?.role !== 'admin') {
+  const openCreateModal = () => {
+    setIsEditing(false);
+    setFormData(initialForm);
+    setError('');
+    setShowModal(true);
+  };
+
+  const openEditModal = (user) => {
+    setIsEditing(true);
+    setSelectedUserId(user._id);
+    
+    // Merge existing permissions with initial structure to prevent missing keys
+    const mergedPermissions = { ...initialForm.permissions, ...user.permissions };
+    
+    setFormData({
+      name: user.name || '',
+      email: user.email,
+      role: user.role,
+      permissions: mergedPermissions
+    });
+    setError('');
+    setShowModal(true);
+  };
+
+  const togglePermission = (key) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [key]: !prev.permissions[key]
+      }
+    }));
+  };
+
+  if (currentUser?.role !== 'admin' && currentUser?.permissions?.userManagement !== true) {
     return (
       <div style={{ textAlign: 'center', padding: '48px' }}>
         <Shield size={48} color="#dc2626" style={{ margin: '0 auto 16px' }} />
         <h2 style={{ color: '#0f172a', marginBottom: '8px' }}>Access Denied</h2>
-        <p style={{ color: '#64748b' }}>Only admins can manage users.</p>
+        <p style={{ color: '#64748b' }}>Only admins or authorized users can manage users.</p>
       </div>
     );
   }
+
+  const permissionLabels = {
+    dashboard: 'Dashboard',
+    sales: 'Sales',
+    salesChannels: 'Sales Channels',
+    inventory: 'Inventory',
+    customers: 'Customers',
+    suppliers: 'Suppliers',
+    invoices: 'Invoices',
+    shipping: 'Shipping',
+    imeiLookup: 'IMEI Lookup',
+    imeiLab: 'IMEI Lab',
+    deviceTest: 'Device Test',
+    userManagement: 'User Management'
+  };
+
+  const messagePlatformLabels = {
+    msg_emails: 'Emails',
+    msg_ebay: 'eBay',
+    msg_amazon: 'Amazon',
+    msg_walmart: 'Walmart',
+    msg_groupon: 'Groupon',
+    msg_tiktok: 'TikTok Shop',
+    msg_whatnot: 'Whatnot',
+    msg_poshmark: 'Poshmark',
+    msg_mercari: 'Mercari'
+  };
 
   return (
     <div>
@@ -99,7 +200,7 @@ export default function UserManagement() {
           <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>User Management</h1>
           <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Manage staff accounts and permissions</p>
         </div>
-        <button onClick={() => { setFormData({ email: '', password: '', role: 'staff' }); setError(''); setShowModal(true); }}
+        <button onClick={openCreateModal}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#e0e7ff', color: '#4338ca', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>
           <Plus size={18} /> Add User
         </button>
@@ -132,11 +233,11 @@ export default function UserManagement() {
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           color: u.role === 'admin' ? 'white' : '#64748b', fontSize: '13px', fontWeight: '700'
                         }}>
-                          {u.email?.charAt(0).toUpperCase()}
+                          {(u.name || u.email)?.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#0f172a' }}>{u.email}</div>
-                          {isCurrentUser && <span style={{ fontSize: '10px', color: '#6366f1', fontWeight: '600' }}>YOU</span>}
+                          <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{u.name || 'Staff Member'} {isCurrentUser && <span style={{ fontSize: '10px', color: '#6366f1', fontWeight: '700', marginLeft: '4px' }}>YOU</span>}</div>
+                          <div style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>{u.email}</div>
                         </div>
                       </div>
                     </td>
@@ -164,10 +265,20 @@ export default function UserManagement() {
                     <td style={{ padding: '12px 16px', fontSize: '13px', color: '#64748b' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                        <button onClick={() => openEditModal(u)}
+                          style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Edit Permissions">
+                          <Edit size={15} color="#475569" />
+                        </button>
                         <button onClick={() => { setSelectedUserId(u._id); setNewPassword(''); setError(''); setShowPasswordModal(true); }}
                           style={{ padding: '6px', background: '#fffbeb', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Reset Password">
                           <Key size={15} color="#b45309" />
                         </button>
+                        {!isCurrentUser && (
+                          <button onClick={() => navigate('/messages', { state: { startChatWithUser: u } })}
+                            style={{ padding: '6px', background: '#eff6ff', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Message User">
+                            <MessageSquare size={15} color="#3b82f6" />
+                          </button>
+                        )}
                         {!isCurrentUser && (
                           <button onClick={() => handleDelete(u._id)}
                             style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Delete">
@@ -184,39 +295,86 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Create User Modal */}
+      {/* Save User Modal */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '28px', maxWidth: '440px', width: '100%' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '28px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>Create User</h2>
+              <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>{isEditing ? 'Edit User & Permissions' : 'Create New User'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#64748b" /></button>
             </div>
             {error && <div style={{ marginBottom: '14px', padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>{error}</div>}
-            <form onSubmit={handleCreate}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>Email *</label>
-                <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
+            <form onSubmit={handleSave}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#334155' }}>Full Name *</label>
+                  <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#334155' }}>Role</label>
+                  <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white', boxSizing: 'border-box' }}>
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
               </div>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>Password *</label>
-                <input type="password" required minLength="6" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
-              </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>Role</label>
-                <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white' }}>
-                  <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+
+              {!isEditing && (
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#334155' }}>Email Address *</label>
+                  <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+              )}
+
+              {!isEditing && (
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#334155' }}>Password *</label>
+                  <input type="password" required minLength="6" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+              )}
+
+              {formData.role === 'staff' && (
+                <>
+                  <div style={{ marginBottom: '24px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', margin: '0 0 12px 0' }}>Module Permissions</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {Object.keys(permissionLabels).map(key => (
+                        <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#334155', fontWeight: '500' }}>
+                          <input type="checkbox" checked={formData.permissions[key] || false} onChange={() => togglePermission(key)}
+                            style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }} />
+                          {permissionLabels[key]}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '24px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', margin: '0 0 12px 0' }}>Message Platform Access</h3>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#64748b' }}>Select which external platforms this staff member can view and reply to messages from.</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {Object.keys(messagePlatformLabels).map(key => (
+                        <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#334155', fontWeight: '500' }}>
+                          <input type="checkbox" checked={formData.permissions[key] || false} onChange={() => togglePermission(key)}
+                            style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }} />
+                          {messagePlatformLabels[key]}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="button" onClick={() => setShowModal(false)}
-                  style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
+                  style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer', fontWeight: '600', color: '#475569' }}>Cancel</button>
                 <button type="submit"
-                  style={{ flex: 1, padding: '10px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Create User</button>
+                  style={{ flex: 1, padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                  {isEditing ? 'Save Changes' : 'Create User'}
+                </button>
               </div>
             </form>
           </div>
@@ -236,7 +394,7 @@ export default function UserManagement() {
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#334155' }}>New Password *</label>
               <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Min 6 characters"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' }} />
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={() => setShowPasswordModal(false)}

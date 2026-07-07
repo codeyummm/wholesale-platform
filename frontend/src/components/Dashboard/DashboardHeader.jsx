@@ -2,12 +2,13 @@ import { Camera, Package, Plus, Users, Bell, Mail, User, Settings, HelpCircle, L
 import { useNavigate } from 'react-router-dom';
 import UniversalSearch from './UniversalSearch';
 import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function DashboardHeader() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef(null);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
   
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -56,7 +57,7 @@ export default function DashboardHeader() {
                 </div>
                 <div className="text-left hidden lg:block">
                   <div className="text-sm font-semibold text-gray-900 leading-tight">{user.name || 'User'}</div>
-                  <div className="text-xs text-gray-500 leading-tight">{user.role || 'Admin'}</div>
+                  <div className="text-xs text-gray-500 leading-tight">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Admin'}</div>
                 </div>
               </button>
               
@@ -119,7 +120,7 @@ export default function DashboardHeader() {
                   
                   <button 
                     className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors" 
-                    onClick={() => { localStorage.clear(); navigate('/login'); }}
+                    onClick={() => { logout(); navigate('/login'); }}
                   >
                     <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
                       <LogOut className="w-4 h-4 text-red-600" />

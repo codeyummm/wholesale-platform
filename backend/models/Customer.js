@@ -8,6 +8,7 @@ const customerSchema = new mongoose.Schema({
     default: 'retail'
   },
   company: { type: String, trim: true },
+  ebayUsername: { type: String, trim: true },
   contact: {
     email: { type: String, trim: true, lowercase: true },
     phone: { type: String, required: true },
