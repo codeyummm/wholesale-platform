@@ -14,3 +14,31 @@ frontend/build/
 *.log
 npm-debug.log*
 backend/temp/
+
+# Python / ML experiment folders
+smolvlm-test-lab/
+smolvlm-test-lab/venv/
+ocr-service/venv/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Large temp/test files at root level
+temp_*.tsx
+temp_*.ts
+*.zip
+check_*.js
+fix_*.js
+test_*.js
+query_db.js
+patch_history.py
+revert.py
+get_edits.py
+dump_target.py
+extract_history.py
+match_target.py
+check_trunc*.py
+app_easyocr*.py
+project_structure.txt
+backend.log
+
