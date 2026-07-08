@@ -128,7 +128,7 @@ const importShopifyProducts = async () => {
         description: product.body_html || '',
         sku: variant?.sku || `SHOP-${product.id}`,
         price: parseFloat(variant?.price || 0),
-        quantity: variant?.inventory_quantity || 0,
+        quantity: Math.max(0, variant?.inventory_quantity || 0),
         condition: 'new', // default
         brand: product.vendor,
         weight: variant?.weight || 0,

@@ -163,10 +163,14 @@ router.post('/import-products', async (req, res) => {
     let savedCount = 0;
     
     for (const data of importedListings) {
-      const exists = await Listing.findOne({ sku: data.sku });
-      if (!exists) {
-        await Listing.create(data);
-        savedCount++;
+      try {
+        const exists = await Listing.findOne({ sku: data.sku });
+        if (!exists) {
+          await Listing.create(data);
+          savedCount++;
+        }
+      } catch (err) {
+        console.error(`Failed to import listing ${data.sku}:`, err.message);
       }
     }
     
