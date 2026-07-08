@@ -14,6 +14,7 @@ export default function ListingsHub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterStock, setFilterStock] = useState('all');
+  const [filterChannel, setFilterChannel] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
   const itemsPerPage = 50;
@@ -36,13 +37,17 @@ export default function ListingsHub() {
       if (filterStock === 'in_stock' && (!listing.quantity || listing.quantity <= 0)) return false;
       if (filterStock === 'out_of_stock' && (listing.quantity && listing.quantity > 0)) return false;
     }
+    // 4. Channel Filter
+    if (filterChannel !== 'all') {
+      if (!listing.channels || !listing.channels.includes(filterChannel)) return false;
+    }
     return true;
   });
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterStatus, filterStock]);
+  }, [searchQuery, filterStatus, filterStock, filterChannel]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -209,6 +214,20 @@ export default function ListingsHub() {
                   <option value="all">All Stock Levels</option>
                   <option value="in_stock">In Stock</option>
                   <option value="out_of_stock">Out of Stock</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Channel</label>
+                <select 
+                  value={filterChannel}
+                  onChange={(e) => setFilterChannel(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                >
+                  <option value="all">All Channels</option>
+                  <option value="shopify">Shopify</option>
+                  <option value="ebay">eBay</option>
+                  <option value="amazon">Amazon</option>
+                  <option value="facebook">Facebook</option>
                 </select>
               </div>
             </div>
