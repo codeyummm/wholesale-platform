@@ -11,12 +11,43 @@ export default function ListingsHub() {
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStock, setFilterStock] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const itemsPerPage = 50;
+
+  // Filter listings before pagination
+  const filteredListings = listings.filter(listing => {
+    // 1. Search Query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const titleMatch = listing.title?.toLowerCase().includes(query);
+      const skuMatch = listing.sku?.toLowerCase().includes(query);
+      if (!titleMatch && !skuMatch) return false;
+    }
+    // 2. Status Filter
+    if (filterStatus !== 'all') {
+      if (listing.status !== filterStatus) return false;
+    }
+    // 3. Stock Filter
+    if (filterStock !== 'all') {
+      if (filterStock === 'in_stock' && (!listing.quantity || listing.quantity <= 0)) return false;
+      if (filterStock === 'out_of_stock' && (listing.quantity && listing.quantity > 0)) return false;
+    }
+    return true;
+  });
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus, filterStock]);
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentListings = listings.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(listings.length / itemsPerPage);
+  const currentListings = filteredListings.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
 
   // Fetch from /api/listings
   useEffect(() => {
@@ -133,18 +164,55 @@ export default function ListingsHub() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-          <div className="relative w-64">
-            <input
-              type="text"
-              placeholder="Search listings..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+        <div className="p-4 border-b border-gray-200 flex flex-col gap-4 bg-gray-50">
+          <div className="flex justify-between items-center">
+            <div className="relative w-64">
+              <input
+                type="text"
+                placeholder="Search listings..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            </div>
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded border transition-colors ${showFilters ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-300 text-gray-600 hover:text-gray-900'}`}
+            >
+              <Filter size={16} /> Filters
+            </button>
           </div>
-          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 border border-gray-300 px-3 py-1.5 rounded bg-white">
-            <Filter size={16} /> Filter
-          </button>
+          
+          {showFilters && (
+            <div className="flex gap-4 pt-4 border-t border-gray-200">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Status</label>
+                <select 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="draft">Draft</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Level</label>
+                <select 
+                  value={filterStock}
+                  onChange={(e) => setFilterStock(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                >
+                  <option value="all">All Stock Levels</option>
+                  <option value="in_stock">In Stock</option>
+                  <option value="out_of_stock">Out of Stock</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -241,8 +309,8 @@ export default function ListingsHub() {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to <span className="font-medium">{Math.min(indexOfLastItem, listings.length)}</span> of{' '}
-                  <span className="font-medium">{listings.length}</span> results
+                  Showing <span className="font-medium">{filteredListings.length === 0 ? 0 : indexOfFirstItem + 1}</span> to <span className="font-medium">{Math.min(indexOfLastItem, filteredListings.length)}</span> of{' '}
+                  <span className="font-medium">{filteredListings.length}</span> results
                 </p>
               </div>
               <div>
