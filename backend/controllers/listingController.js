@@ -7,15 +7,27 @@ const shopifyListingService = require('../services/shopifyListingService');
 
 exports.getListings = async (req, res) => {
   try {
-    const listings = await Listing.find().sort({ createdAt: -1 });
+    // Exclude heavy fields like description and images to speed up network transfer
+    const listings = await Listing.find()
+      .select('-description -images')
+      .sort({ createdAt: -1 })
+      .lean();
     
-    // Fetch channels for each listing to attach to response
-    const listingsWithChannels = await Promise.all(listings.map(async (listing) => {
-      const channels = await ChannelListing.find({ listingId: listing._id });
-      return {
-        ...listing.toObject(),
-        channels: channels.map(c => c.platform)
-      };
+    // Fetch all channels for these listings in ONE query to avoid the N+1 problem
+    const listingIds = listings.map(l => l._id);
+    const allChannels = await ChannelListing.find({ listingId: { $in: listingIds } }).lean();
+    
+    // Group channels by listingId
+    const channelMap = {};
+    allChannels.forEach(c => {
+      const lid = c.listingId.toString();
+      if (!channelMap[lid]) channelMap[lid] = [];
+      channelMap[lid].push(c.platform);
+    });
+
+    const listingsWithChannels = listings.map(listing => ({
+      ...listing,
+      channels: channelMap[listing._id.toString()] || []
     }));
 
     res.json({ success: true, listings: listingsWithChannels });
