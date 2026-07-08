@@ -217,7 +217,7 @@ export default function SalesChannels() {
     setSuccessMsg('');
     
     if (['ebay', 'etsy', 'tiktok', 'whatnot', 'groupon', 'poshmark', 'mercari'].includes(selectedChannel.id)) {
-      window.location.href = `http://localhost:5000/api/${selectedChannel.id}/auth`;
+      window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/${selectedChannel.id}/auth`;
       return;
     }
 
@@ -249,7 +249,7 @@ export default function SalesChannels() {
       }
 
       // Otherwise, standard OAuth flow
-      window.location.href = `http://localhost:5000/api/shopify/auth?shop=${cleanDomain}`;
+      window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/shopify/auth?shop=${cleanDomain}`;
       return;
     }
 
