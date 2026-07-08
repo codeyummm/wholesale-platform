@@ -6,8 +6,8 @@ const syncShopifyOrders = async () => {
   try {
     const { accessToken, storeDomain } = await getValidShopifyToken();
 
-    // Fetch unfulfilled orders
-    const response = await axios.get(`https://${storeDomain}/admin/api/2024-01/orders.json?status=unfulfilled`, {
+    // Fetch all orders (any status)
+    const response = await axios.get(`https://${storeDomain}/admin/api/2024-01/orders.json?status=any`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
       }
