@@ -45,7 +45,7 @@ const syncShopifyOrders = async () => {
           paymentStatus: order.financial_status === 'paid' ? 'paid' : 'pending',
           status: 'pending',
           deliveryStatus: 'pending',
-          channel: 'shopify',
+          salesChannel: 'shopify',
           createdBy: defaultUser ? defaultUser._id : null,
           platformDetails: {
             shopify: {
