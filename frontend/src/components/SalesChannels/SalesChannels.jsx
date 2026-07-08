@@ -121,15 +121,21 @@ export default function SalesChannels() {
   const navigate = useNavigate();
 
   const handleSync = async (channel) => {
-    if (!['ebay', 'etsy', 'tiktok', 'whatnot', 'groupon', 'poshmark', 'mercari'].includes(channel.id)) return;
+    if (!['ebay', 'etsy', 'tiktok', 'whatnot', 'groupon', 'poshmark', 'mercari', 'shopify'].includes(channel.id)) return;
     setIsSyncing(channel.id);
     setErrorMsg('');
     setSuccessMsg('');
     
     try {
-      const res = await api.get(`/${channel.id}/sync-orders`);
+      let res;
+      if (channel.id === 'shopify') {
+        res = await api.post(`/shopify/sync-orders`);
+      } else {
+        res = await api.get(`/${channel.id}/sync-orders`);
+      }
+      
       if (res.data.success) {
-        setSuccessMsg(res.data.message);
+        setSuccessMsg(res.data.message || `Successfully synced ${res.data.syncedCount || 0} orders!`);
       }
     } catch (err) {
       setErrorMsg(err.response?.data?.message || 'Failed to sync orders.');
