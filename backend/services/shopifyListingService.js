@@ -108,14 +108,33 @@ const importShopifyProducts = async () => {
   try {
     const { accessToken, storeDomain } = await getValidShopifyToken();
 
-    // Fetch all products
-    const response = await axios.get(`https://${storeDomain}/admin/api/2024-01/products.json`, {
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
+    // Fetch all products with pagination
+    let products = [];
+    let url = `https://${storeDomain}/admin/api/2024-01/products.json?limit=250`;
+    
+    while (url) {
+      const response = await axios.get(url, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+        }
+      });
+      
+      products = products.concat(response.data.products);
+      
+      const linkHeader = response.headers['link'];
+      let nextUrl = null;
+      if (linkHeader) {
+        const links = linkHeader.split(',');
+        const nextLink = links.find(link => link.includes('rel="next"'));
+        if (nextLink) {
+          const match = nextLink.match(/<([^>]+)>/);
+          if (match) {
+            nextUrl = match[1];
+          }
+        }
       }
-    });
-
-    const products = response.data.products;
+      url = nextUrl;
+    }
     const importedListings = [];
 
     for (const product of products) {
