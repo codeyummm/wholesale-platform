@@ -7,7 +7,7 @@ import SyncModal from './SyncModal';
 export default function ListingsHub() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [importState, setImportState] = useState({ show: false, status: 'loading', message: '' });
+  const [importState, setImportState] = useState({ show: false, status: 'idle', message: '' });
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
