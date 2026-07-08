@@ -47,7 +47,7 @@ export default function ListingsHub() {
       setImportState({ show: true, status: 'loading', message: '' });
       const res = await api.post('/shopify/import-products');
       if (res.data.success) {
-        setImportState({ show: true, status: 'success', message: `Successfully imported ${res.data.imported} products!` });
+        setImportState({ show: true, status: 'success', message: `Successfully synced ${res.data.totalFound} products and added ${res.data.imported} new listings!` });
         fetchListings();
       } else {
         setImportState({ show: true, status: 'error', message: 'Failed to import products.' });
