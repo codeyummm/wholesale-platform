@@ -91,7 +91,7 @@ const syncShopifyOrders = async () => {
           }
         }
 
-        // 5. Shipping Address
+        // 5. Shipping Address and Cost
         let address = {};
         if (order.shipping_address) {
           address = {
@@ -103,6 +103,11 @@ const syncShopifyOrders = async () => {
             country: order.shipping_address.country_code || order.shipping_address.country,
             phone: order.shipping_address.phone
           };
+        }
+
+        let shippingCollected = 0;
+        if (order.shipping_lines && order.shipping_lines.length > 0) {
+          shippingCollected = order.shipping_lines.reduce((sum, line) => sum + parseFloat(line.price || 0), 0);
         }
 
         const newSale = new Sale({
@@ -125,7 +130,8 @@ const syncShopifyOrders = async () => {
           shipping: {
             trackingNumber,
             carrier,
-            address
+            address,
+            shippingCollected
           },
           platformDetails: {
             shopify: {
