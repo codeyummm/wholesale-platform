@@ -29,6 +29,9 @@ const syncShopifyOrders = async () => {
           externalLineItemId: item.id.toString()
         }));
 
+        const User = require('../models/User');
+        const defaultUser = await User.findOne();
+
         const newSale = new Sale({
           saleNumber: order.order_number.toString(),
           externalOrderId: order.id.toString(),
@@ -43,6 +46,7 @@ const syncShopifyOrders = async () => {
           status: 'pending',
           deliveryStatus: 'pending',
           channel: 'shopify',
+          createdBy: defaultUser ? defaultUser._id : null,
           platformDetails: {
             shopify: {
               orderId: order.id.toString()

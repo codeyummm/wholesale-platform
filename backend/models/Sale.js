@@ -28,7 +28,7 @@ const saleSchema = new mongoose.Schema({
   totalProfit: { type: Number, default: 0 },
   paymentMethod: {
     type: String,
-    enum: ['cash', 'card', 'bank_transfer', 'check', 'zelle', 'paypal', 'ebay', 'other'],
+    enum: ['cash', 'card', 'bank_transfer', 'check', 'zelle', 'paypal', 'ebay', 'shopify', 'other'],
     default: 'cash'
   },
   paymentStatus: {
