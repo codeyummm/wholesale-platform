@@ -164,7 +164,11 @@ const importShopifyProducts = async () => {
         }
       };
       
-      importedListings.push(newListing);
+      importedListings.push({
+        newListing,
+        externalId: product.id.toString(),
+        storeDomain: storeDomain
+      });
     }
     
     return importedListings;

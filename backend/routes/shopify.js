@@ -160,17 +160,26 @@ router.post('/import-products', async (req, res) => {
     const importedListings = await importShopifyProducts();
     // Assuming you want to save them to the Listing collection
     const Listing = require('../models/Listing');
+    const ChannelListing = require('../models/ChannelListing');
     let savedCount = 0;
     
     for (const data of importedListings) {
       try {
-        const exists = await Listing.findOne({ sku: data.sku });
+        const exists = await Listing.findOne({ sku: data.newListing.sku });
         if (!exists) {
-          await Listing.create(data);
+          const savedListing = await Listing.create(data.newListing);
+          await ChannelListing.create({
+            listingId: savedListing._id,
+            platform: 'shopify',
+            externalId: data.externalId,
+            externalUrl: `https://${data.storeDomain}/admin/products/${data.externalId}`,
+            status: 'active',
+            lastSync: new Date()
+          });
           savedCount++;
         }
       } catch (err) {
-        console.error(`Failed to import listing ${data.sku}:`, err.message);
+        console.error(`Failed to import listing ${data.newListing.sku}:`, err.message);
       }
     }
     
