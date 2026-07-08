@@ -3,6 +3,8 @@ import { Mic, MicOff, Send, Sparkles, User, Loader2, Volume2, VolumeX, Square, H
 import api from '../../utils/api';
 
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // ─── Animated speaking bars ───────────────────────────────────────
 const SpeakingBars = () => (
@@ -249,43 +251,7 @@ export default function NovaAssistant() {
     else             { rec.start(); setIsListening(true); }
   };
 
-  // ── Render markdown (links and bold) ───────────────────────────
-  const renderText = (text) => {
-    if (!text) return null;
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts = text.split(linkRegex);
-
-    return parts.map((part, i) => {
-      if (i % 3 === 0) {
-        // Normal text block (which might contain bold)
-        const boldParts = part.split(/\*\*(.*?)\*\*/g);
-        return (
-          <React.Fragment key={i}>
-            {boldParts.map((bp, j) => {
-              if (j % 2 === 1) return <strong key={j}>{bp}</strong>;
-              return bp.split('\n').map((line, k, arr) => (
-                <React.Fragment key={`${j}-${k}`}>
-                  {line}
-                  {k < arr.length - 1 && <br />}
-                </React.Fragment>
-              ));
-            })}
-          </React.Fragment>
-        );
-      } else if (i % 3 === 1) {
-        // Link Text
-        const url = parts[i + 1];
-        return (
-          <Link key={i} to={url} className="text-indigo-600 underline hover:text-indigo-800 transition-colors font-medium">
-            {part}
-          </Link>
-        );
-      } else {
-        // URL string (handled in the Link)
-        return null;
-      }
-    });
-  };
+  // renderText has been replaced by ReactMarkdown
 
   const shortcuts = [
     { icon: '📦', label: 'Orders past 7 days',   cmd: 'How many orders in the past 7 days?' },
@@ -395,10 +361,18 @@ export default function NovaAssistant() {
                   {msg.role === 'user' ? <User className="w-4 h-4 text-gray-600" /> : <Sparkles className="w-4 h-4 text-white" />}
                 </div>
               </div>
-              <div className={`px-5 py-3.5 rounded-2xl max-w-[80%] shadow-sm text-[15px] leading-relaxed whitespace-pre-wrap relative group ${
+              <div className={`px-5 py-3.5 rounded-2xl max-w-[80%] shadow-sm text-[15px] leading-relaxed relative group ${
                 msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'
               }`}>
-                {msg.role === 'assistant' ? renderText(msg.content) : msg.content}
+                {msg.role === 'assistant' ? (
+                  <div className="prose prose-sm prose-indigo max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                )}
                 
                 {msg.role === 'assistant' && (
                   <button 
