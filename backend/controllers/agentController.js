@@ -320,8 +320,8 @@ async function handleRevenue(text) {
 async function handleOrderLookup(text) {
   const lc = text.toLowerCase();
 
-  const orderNumMatch = text.match(/\b(SL[\w\d-]+)\b/i);
-  const trackingMatch = text.match(/\b(1Z[A-Z0-9]{16}|\d{12,22}|TBA\d{10,20})\b/i);
+  const orderNumMatch = text.match(/\b(SL[\w\d-]+|\d{4,10})\b/i);
+  const trackingMatch = text.match(/\b(1Z[A-Z0-9]{16}|TBA\d{10,20})\b/i);
 
   let query = null;
   let notFoundMsg = '';
@@ -852,7 +852,7 @@ function detectIntent(text) {
     return 'trend_analysis';
 
   // 2. Specific order number or tracking number
-  if (/\bSL[\w\d-]+\b/i.test(text)) return 'order_lookup';
+  if (/\b(SL[\w\d-]+|\d{4,10})\b/i.test(text)) return 'order_lookup';
   if (/\b(1Z[A-Z0-9]{16}|TBA\d{10,20})\b/i.test(text)) return 'order_lookup';
   if (/\b(\d{12}|\d{18}|\d{20}|\d{22})\b/.test(text)) return 'order_lookup'; // USPS, FedEx, etc.
   if (/\b(status|track|tracking)\b/i.test(text) && /\b\d{10,22}\b/.test(text)) return 'order_lookup';
