@@ -863,7 +863,7 @@ export default function SalesList() {
                         <div>{sale.saleNumber}</div>
                         {sale.externalOrderId && (
                           <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>
-                            EID: {sale.externalOrderId}
+                            {sale.salesChannel === 'shopify' ? 'SH-ID: ' : 'EID: '} {sale.externalOrderId}
                           </div>
                         )}
                       </td>

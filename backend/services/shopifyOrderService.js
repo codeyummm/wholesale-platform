@@ -109,7 +109,7 @@ const syncShopifyOrders = async () => {
           saleNumber: order.order_number.toString(),
           externalOrderId: order.id.toString(),
           customer: customerRecord ? customerRecord._id : null,
-          customerName: customerRecord ? `${customerRecord.firstName} ${customerRecord.lastName}` : 'Shopify Customer',
+          customerName: customerRecord ? customerRecord.name : 'Shopify Customer',
           items: items,
           subtotal: parseFloat(order.subtotal_price),
           tax: parseFloat(order.total_tax),

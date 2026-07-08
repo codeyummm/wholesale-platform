@@ -734,7 +734,7 @@ export default function SaleDetails() {
                      <span className="flex items-center gap-2"><Mail size={14}/> {selectedOrder.customer?.contact?.email || 'N/A'}</span>
                      {selectedOrder.externalOrderId ? (
                        <>
-                         <span className="flex items-center gap-2"><span className="text-gray-400 text-xs font-black uppercase tracking-widest mr-[-2px] w-[20px] text-left">EID</span> {selectedOrder.externalOrderId}</span>
+                         <span className="flex items-center gap-2"><span className="text-gray-400 text-xs font-black uppercase tracking-widest mr-[-2px] w-[20px] text-left">{selectedOrder.salesChannel === 'shopify' ? 'SHID' : 'EID'}</span> {selectedOrder.externalOrderId}</span>
                          <span className="flex items-center gap-2"><span className="text-gray-400 text-xs font-black uppercase tracking-widest mr-[-2px] w-[20px] text-left">SYS</span> {selectedOrder.saleNumber}</span>
                        </>
                      ) : (
