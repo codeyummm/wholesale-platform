@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Plus, Filter, Globe, ArrowRight, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Package, Search, Plus, Filter, Globe, ArrowRight, Loader2, CheckCircle2, XCircle, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import SyncModal from './SyncModal';
@@ -56,18 +56,22 @@ export default function ListingsHub() {
       console.error('Import failed', err);
       setImportState({ show: true, status: 'error', message: 'Error connecting to Shopify.' });
     }
-    
-    // Auto-close after 2.5 seconds if it's not still loading
-    setTimeout(() => {
-      setImportState(prev => (prev.status !== 'loading' ? { ...prev, show: false } : prev));
-    }, 2500);
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto relative">
       {importState.show && (
         <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 text-center">
+          <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 text-center relative">
+            {importState.status !== 'loading' && (
+              <button 
+                onClick={() => setImportState({ ...importState, show: false })}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            )}
+            
             {importState.status === 'loading' && (
               <>
                 <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
@@ -82,6 +86,12 @@ export default function ListingsHub() {
                 <CheckCircle2 className="w-12 h-12 text-green-500" />
                 <h3 className="text-xl font-bold text-gray-900">Sync Complete!</h3>
                 <p className="text-gray-500 text-sm">{importState.message}</p>
+                <button 
+                  onClick={() => setImportState({ ...importState, show: false })}
+                  className="mt-2 w-full bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  View Listings
+                </button>
               </>
             )}
             {importState.status === 'error' && (
@@ -89,6 +99,12 @@ export default function ListingsHub() {
                 <XCircle className="w-12 h-12 text-red-500" />
                 <h3 className="text-xl font-bold text-gray-900">Sync Failed</h3>
                 <p className="text-gray-500 text-sm">{importState.message}</p>
+                <button 
+                  onClick={() => setImportState({ ...importState, show: false })}
+                  className="mt-2 w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Close
+                </button>
               </>
             )}
           </div>
