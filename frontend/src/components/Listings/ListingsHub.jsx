@@ -370,7 +370,6 @@ export default function ListingsHub() {
         listing={selectedListing}
         onSyncStarted={() => {
           fetchListings();
-          alert('Sync job started!');
         }}
       />
     </div>
