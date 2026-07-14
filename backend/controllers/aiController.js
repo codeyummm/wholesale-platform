@@ -144,3 +144,42 @@ Please provide a rewritten version of their draft.
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.generateListingSEO = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!GEMINI_API_KEY) return res.status(500).json({ success: false, message: 'GEMINI_API_KEY not configured' });
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `
+You are an expert e-commerce SEO specialist. Your task is to optimize the provided product title and description for maximum visibility and ranking across platforms like eBay, Etsy, Amazon, Shopify, and Google Search.
+
+Current Title: ${title || 'N/A'}
+Current Description: ${description || 'N/A'}
+
+Please generate a highly SEO-optimized title (max 80 characters) and a detailed, persuasive description. The description should include bullet points, key features, and relevant keywords naturally woven into the text. Format the description using basic HTML tags (like <p>, <b>, <br>) as this will be rendered in a rich text editor.
+
+Return the result STRICTLY as a JSON object with two keys: "title" and "description". Do not include markdown formatting like \`\`\`json.
+Example:
+{"title": "Optimized Title Here", "description": "<p>Optimized Description</p>"}
+`;
+
+    const result = await model.generateContent(prompt);
+    let text = result.response.text().trim();
+    
+    // Clean up markdown code blocks if the AI ignored instructions
+    if (text.startsWith('\`\`\`json')) {
+      text = text.replace(/^\`\`\`json\n/, '').replace(/\n\`\`\`$/, '');
+    } else if (text.startsWith('\`\`\`')) {
+      text = text.replace(/^\`\`\`\n/, '').replace(/\n\`\`\`$/, '');
+    }
+
+    const suggestions = JSON.parse(text);
+    res.json({ success: true, data: suggestions });
+  } catch (error) {
+    console.error('AI generateListingSEO error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

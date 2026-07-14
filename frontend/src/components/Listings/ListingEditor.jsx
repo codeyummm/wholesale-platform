@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Star } from 'lucide-react';
+import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Star, Wand2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -7,6 +7,7 @@ export default function ListingEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
   
+  const [isGeneratingSEO, setIsGeneratingSEO] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -68,6 +69,28 @@ export default function ListingEditor() {
       console.error('Failed to fetch listing', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAIGenerate = async () => {
+    try {
+      setIsGeneratingSEO(true);
+      const res = await api.post('/ai/generate-listing-seo', {
+        title: formData.title,
+        description: formData.description
+      });
+      if (res.data.success && res.data.data) {
+        setFormData(prev => ({
+          ...prev,
+          title: res.data.data.title || prev.title,
+          description: res.data.data.description || prev.description
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to generate SEO', err);
+      alert('Failed to generate SEO: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsGeneratingSEO(false);
     }
   };
 
@@ -172,7 +195,18 @@ export default function ListingEditor() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="md:col-span-2 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Basic Information</h2>
+              <button 
+                type="button" 
+                onClick={handleAIGenerate}
+                disabled={isGeneratingSEO}
+                className="text-sm bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-sm transition-all"
+              >
+                <Wand2 size={14} />
+                {isGeneratingSEO ? 'Generating...' : 'AI SEO Optimize'}
+              </button>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
