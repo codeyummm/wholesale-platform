@@ -89,7 +89,7 @@ export default function Sidebar() {
   });
 
   return (
-    <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
+    <div className={`bg-white border-r border-gray-200 flex flex-col h-full min-h-0 max-h-screen transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <img 
           src="/logos/udeal-dark.png"
@@ -104,7 +104,7 @@ export default function Sidebar() {
           {collapsed ? <ChevronRight className="w-5 h-5 text-gray-600" /> : <ChevronLeft className="w-5 h-5 text-gray-600" />}
         </button>
       </div>
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 p-3 pb-24 space-y-1 overflow-y-auto min-h-0">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
           
