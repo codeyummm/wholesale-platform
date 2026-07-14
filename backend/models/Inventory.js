@@ -70,5 +70,6 @@ inventorySchema.virtual('availableQuantity').get(function() {
 });
 
 inventorySchema.index({ model: 1, brand: 1 });
+inventorySchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Inventory', inventorySchema);
