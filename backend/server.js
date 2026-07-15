@@ -32,8 +32,16 @@ mongoose.connect(process.env.MONGODB_URI)
     
     // Start background sync tasks
     startAutoSync();
+
+    // Schedule Daily Backup at 2:00 AM
+    const cron = require('node-cron');
+    const runBackup = require('./scripts/runBackup');
+    cron.schedule('0 2 * * *', () => {
+      console.log('[CRON] Running daily Doomsday backup...');
+      runBackup().catch(err => console.error('[CRON] Backup failed:', err));
+    });
   })
-  .catch(err => console.error('❌ MongoDB Error:', err));
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 app.use(express.json({ limit: '10mb' }));
 const path = require('path');
