@@ -1,22 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const { scanInvoice, saveScannedItems } = require('../controllers/uploadController');
+const { uploadToSpace } = require('../utils/storage');
 const { protect } = require('../middleware/auth');
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images allowed'));
+router.post('/', protect, uploadToSpace.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
+    
+    // multer-s3 attaches the location to req.file
+    res.json({
+      success: true,
+      url: req.file.location,
+      key: req.file.key
+    });
+  } catch (error) {
+    console.error('File upload error:', error);
+    res.status(500).json({ success: false, message: 'Server error during upload.' });
   }
 });
-
-router.post('/scan-invoice', protect, upload.single('invoice'), scanInvoice);
-router.post('/save-scanned', protect, saveScannedItems);
 
 module.exports = router;

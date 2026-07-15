@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { PDFDocument } = require('pdf-lib');
+const { uploadBuffer } = require('../utils/storage');
 
 // ShipStation API base URL
 const SHIPSTATION_API_URL = 'https://ssapi.shipstation.com';
@@ -190,12 +191,21 @@ const createLabel = async (req, res) => {
     }
 
     // ShipStation returns the label as a Base64 encoded PDF string (labelData)
-    // and the tracking number in trackingNumber.
+    // Upload this to DigitalOcean Spaces
+    const pdfBuffer = Buffer.from(labelResponse.labelData, 'base64');
+    const labelUrl = await uploadBuffer(
+      pdfBuffer, 
+      `labels/${labelResponse.shipmentId || Date.now()}.pdf`, 
+      'application/pdf', 
+      true
+    );
+
     res.status(200).json({ 
       success: true, 
       shipmentId: labelResponse.shipmentId,
       trackingNumber: labelResponse.trackingNumber,
-      labelData: labelResponse.labelData, 
+      labelUrl: labelUrl, 
+      labelData: labelResponse.labelData, // Keep this for backward compatibility for now just in case
       shipmentCost: labelResponse.shipmentCost,
       insuranceCost: labelResponse.insuranceCost || 0
     });

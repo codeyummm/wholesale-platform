@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Star, Wand2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Star, Wand2, Upload } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -8,6 +8,8 @@ export default function ListingEditor() {
   const { id } = useParams();
   
   const [isGeneratingSEO, setIsGeneratingSEO] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -120,6 +122,37 @@ export default function ListingEditor() {
       ...prev,
       images: [...prev.images, { url: '', alt: '', isPrimary: prev.images.length === 0 }]
     }));
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingImage(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res.data.success) {
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, { url: res.data.url, alt: file.name.split('.')[0], isPrimary: prev.images.length === 0 }]
+        }));
+      }
+    } catch (err) {
+      console.error('File upload failed', err);
+      alert('Upload failed: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsUploadingImage(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleUpdateImage = (index, field, value) => {
@@ -238,17 +271,35 @@ export default function ListingEditor() {
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <ImageIcon size={20} className="text-gray-500" /> Media
               </h2>
-              <button 
-                onClick={handleAddImage}
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
-              >
-                <Plus size={16} /> Add Image URL
-              </button>
+              <div className="flex gap-3">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 disabled:opacity-50"
+                >
+                  <Upload size={16} /> {isUploadingImage ? 'Uploading...' : 'Upload Image'}
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleAddImage}
+                  className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1"
+                >
+                  <Plus size={16} /> Add URL
+                </button>
+              </div>
             </div>
             
             {formData.images.length === 0 ? (
               <div className="text-center p-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 text-sm">
-                No images added yet. Click "Add Image URL" to add product photos.
+                No images added yet. Click "Upload Image" or "Add URL" to add product photos.
               </div>
             ) : (
               <div className="space-y-4">

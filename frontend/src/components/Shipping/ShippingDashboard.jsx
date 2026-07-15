@@ -413,8 +413,8 @@ export default function ShippingDashboard() {
       const response = await api.post('/shipping/label', payload);
       
       if (response.data.success) {
-        const { trackingNumber, labelData, shipmentCost, insuranceCost, shipmentId } = response.data;
-        const pdfDataUrl = `data:application/pdf;base64,${labelData}`;
+        const { trackingNumber, labelData, labelUrl, shipmentCost, insuranceCost, shipmentId } = response.data;
+        const pdfDataUrl = labelUrl || `data:application/pdf;base64,${labelData}`;
         const finalTrueCost = (shipmentCost || 0) + (insuranceCost || 0);
         
         // Map ShipStation carrier codes to clean names
