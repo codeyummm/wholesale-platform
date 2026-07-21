@@ -320,16 +320,28 @@ async function handleRevenue(text) {
 async function handleOrderLookup(text) {
   const lc = text.toLowerCase();
 
-  const orderNumMatch = text.match(/\b(SL[\w\d-]+|\d{4,10})\b/i);
+  const orderNumMatch = text.match(/\b((?:SL|EB)[\w\d-]+|\d{4,10})\b/i);
   const trackingMatch = text.match(/\b(1Z[A-Z0-9]{16}|TBA\d{10,20})\b/i);
+  const startsWithMatch = text.match(/start(?:ing|s)?\s+with\s+['"]?([a-z0-9_-]+)['"]?/i);
 
   let query = null;
   let notFoundMsg = '';
   let matchVal = '';
+  let isMultiple = false;
 
-  if (orderNumMatch) {
+  if (startsWithMatch) {
+    matchVal = startsWithMatch[1].toUpperCase();
+    if (matchVal === 'EB' && text.toLowerCase().includes('id')) {
+        // Handled: "starting with eb id"
+    } else if (matchVal.endsWith('ID') && matchVal.length > 2) {
+        matchVal = matchVal.replace(/ID$/, '');
+    }
+    query = { saleNumber: { $regex: new RegExp('^' + matchVal, 'i') } };
+    notFoundMsg = `❌ I couldn't find any orders starting with "${matchVal}". Please double-check the order ID and try again.`;
+    isMultiple = true;
+  } else if (orderNumMatch) {
     matchVal = orderNumMatch[1].toUpperCase();
-    query = { saleNumber: { $regex: new RegExp(matchVal, 'i') } };
+    query = { saleNumber: { $regex: new RegExp('^' + matchVal + '$', 'i') } }; // Exact match preferred for single lookup
     notFoundMsg = `❌ Order **${matchVal}** not found.`;
   } else if (trackingMatch) {
     matchVal = trackingMatch[1].toUpperCase();
@@ -338,8 +350,27 @@ async function handleOrderLookup(text) {
   }
 
   if (query) {
-    const sale = await Sale.findOne(query)
-      .select('saleNumber customerName totalAmount salesChannel status deliveryStatus paymentStatus shipping items createdAt');
+    if (isMultiple) {
+      const sales = await Sale.find(query)
+        .select('saleNumber customerName totalAmount salesChannel status deliveryStatus paymentStatus shipping items createdAt')
+        .sort({ createdAt: -1 }).limit(25);
+      
+      if (!sales.length) return notFoundMsg;
+
+      const list = sales.map(s =>
+        `  • [${s.saleNumber}](/sales/${s._id}) — ${fmt.money(s.totalAmount)} — **${fmt.cap(s.status)}** (${fmt.cap(s.deliveryStatus || 'pending')}) — ${fmt.date(s.createdAt)}`
+      ).join('\n');
+
+      return `📦 Found **${sales.length}** order(s) starting with **${matchVal}**:\n\n${list}`;
+    }
+
+    let sale = await Sale.findOne(query).select('saleNumber customerName totalAmount salesChannel status deliveryStatus paymentStatus shipping items createdAt');
+    
+    // If exact match fails, try partial match for single order lookup
+    if (!sale && orderNumMatch) {
+      sale = await Sale.findOne({ saleNumber: { $regex: new RegExp(matchVal, 'i') } })
+        .select('saleNumber customerName totalAmount salesChannel status deliveryStatus paymentStatus shipping items createdAt');
+    }
 
     if (!sale) return notFoundMsg;
 
@@ -852,13 +883,14 @@ function detectIntent(text) {
     return 'trend_analysis';
 
   // 2. Specific order number or tracking number
-  if (/\b(SL[\w\d-]+|\d{4,10})\b/i.test(text)) return 'order_lookup';
+  if (/\b((?:SL|EB)[\w\d-]+|\d{4,10})\b/i.test(text)) return 'order_lookup';
   if (/\b(1Z[A-Z0-9]{16}|TBA\d{10,20})\b/i.test(text)) return 'order_lookup';
   if (/\b(\d{12}|\d{18}|\d{20}|\d{22})\b/.test(text)) return 'order_lookup'; // USPS, FedEx, etc.
   if (/\b(status|track|tracking)\b/i.test(text) && /\b\d{10,22}\b/.test(text)) return 'order_lookup';
   if (/\b(orders?|sales?|purchases?|transactions?)\b/.test(lc)) return 'orders';
 
   if (/\b(status of order|order status|find order|look up order|track order|where is order|show order)\b/.test(lc)) return 'order_lookup';
+  if (/\bstart(?:ing|s)?\s+with\b/i.test(lc)) return 'order_lookup';
 
   // 7. Revenue / profit
   if (/\b(revenue|profit|earnings|income|money|sales total|how much|made)\b/.test(lc)) return 'revenue';
@@ -954,6 +986,14 @@ exports.chatWithNova = async (req, res) => {
         name: "lookup_orders",
         description: "Search or lookup orders, sales, tracking numbers, or check order status. Use this if the user asks about an order. Input should be the order number, tracking number, or search term.",
         func: async (input) => {
+          // If input is just "eb id" or similar, append "starting with" to force fallback matching to try both
+          let q = input;
+          if (q.length < 15 && !/start(?:ing|s)?\s+with/i.test(q)) {
+             q = "starting with " + q;
+          }
+          if (/start(?:ing|s)?\s+with/i.test(q)) {
+             return await handleOrderLookup(q);
+          }
           if (/(today|yesterday|week|month|days?)/i.test(input) || /(orders|sales)/i.test(input)) {
              if (/(pending)/i.test(input)) return await handlePending();
              return await handleOrders(input);

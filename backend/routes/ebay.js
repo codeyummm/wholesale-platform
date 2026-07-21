@@ -1025,4 +1025,17 @@ router.post('/messages/:id/read', protect, async (req, res) => {
   }
 });
 
+// @route   POST /api/ebay/import-listings
+// @desc    Import active eBay listings into master Listing collection
+router.post('/import-listings', async (req, res) => {
+  try {
+    const { importEbayListings } = require('../services/ebayListingService');
+    const result = await importEbayListings();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('eBay import error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

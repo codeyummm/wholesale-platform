@@ -102,3 +102,83 @@ exports.createEbayListing = async (listing, syncOptions) => {
     throw error;
   }
 };
+
+/**
+ * Imports active eBay listings and converts them to master Listing records
+ */
+exports.importEbayListings = async () => {
+  const axios = require('axios');
+  const xml2js = require('xml2js');
+  const Integration = require('../models/Integration');
+  const Listing = require('../models/Listing');
+  const ChannelListing = require('../models/ChannelListing');
+
+  const integration = await Integration.findOne({ platform: 'ebay', isConnected: true });
+  if (!integration?.credentials?.accessToken) throw new Error('eBay not connected');
+  const accessToken = integration.credentials.accessToken;
+
+  const isSandbox = process.env.EBAY_ENV !== 'production';
+  const tradingApiUrl = isSandbox
+    ? 'https://api.sandbox.ebay.com/ws/api.dll'
+    : 'https://api.ebay.com/ws/api.dll';
+
+  const xmlPayload = `<?xml version="1.0" encoding="utf-8"?>
+<GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents">
+  <ErrorLanguage>en_US</ErrorLanguage>
+  <WarningLevel>High</WarningLevel>
+  <ActiveList>
+    <Include>true</Include>
+    <Pagination><EntriesPerPage>100</EntriesPerPage><PageNumber>1</PageNumber></Pagination>
+  </ActiveList>
+</GetMyeBaySellingRequest>`;
+
+  const response = await axios.post(tradingApiUrl, xmlPayload, {
+    headers: {
+      'X-EBAY-API-SITEID': '0',
+      'X-EBAY-API-COMPATIBILITY-LEVEL': '1331',
+      'X-EBAY-API-CALL-NAME': 'GetMyeBaySelling',
+      'X-EBAY-API-IAF-TOKEN': accessToken,
+      'Content-Type': 'text/xml'
+    }
+  });
+
+  const parser = new xml2js.Parser({ explicitArray: false });
+  const parsed = await parser.parseStringPromise(response.data);
+  const result = parsed.GetMyeBaySellingResponse;
+  if (result.Ack !== 'Success' && result.Ack !== 'Warning') throw new Error('eBay API error fetching listings');
+
+  const items = result.ActiveList?.ItemArray?.Item;
+  if (!items) return { imported: 0, skipped: 0 };
+
+  const itemList = Array.isArray(items) ? items : [items];
+  let imported = 0, skipped = 0;
+
+  for (const item of itemList) {
+    try {
+      const sku = item.SKU || `EBAY-${item.ItemID}`;
+      const existing = await Listing.findOne({ sku });
+      if (existing) { skipped++; continue; }
+
+      const newListing = await Listing.create({
+        title: item.Title,
+        sku,
+        price: parseFloat(item.SellingStatus?.CurrentPrice?._ || item.BuyItNowPrice?._ || 0),
+        quantity: parseInt(item.QuantityAvailable || item.Quantity || 1),
+        condition: 'used',
+        status: 'active',
+        platformSettings: { ebay: { categoryId: item.PrimaryCategory?.CategoryID } }
+      });
+
+      await ChannelListing.findOneAndUpdate(
+        { listingId: newListing._id, platform: 'ebay' },
+        { status: 'active', remoteId: item.ItemID, lastSyncedAt: new Date() },
+        { upsert: true, new: true }
+      );
+      imported++;
+    } catch (err) {
+      console.error(`Failed to import eBay item ${item.ItemID}:`, err.message);
+      skipped++;
+    }
+  }
+  return { imported, skipped };
+};

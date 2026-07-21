@@ -121,4 +121,17 @@ router.get('/callback', async (req, res) => {
   }
 });
 
+// @route   POST /api/etsy/import-listings
+// @desc    Import active Etsy listings into master Listing collection
+router.post('/import-listings', async (req, res) => {
+  try {
+    const { importEtsyListings } = require('../services/etsyListingService');
+    const result = await importEtsyListings();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('Etsy import error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

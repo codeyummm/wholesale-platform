@@ -24,6 +24,28 @@ const listingSchema = new mongoose.Schema({
   
   weight: { type: Number, min: 0 },
   barcode: { type: String, trim: true },
+
+  // Per-platform title overrides (used when syncing instead of master title)
+  platformTitles: {
+    ebay:    { type: String, trim: true },
+    etsy:    { type: String, trim: true },
+    shopify: { type: String, trim: true },
+    amazon:  { type: String, trim: true },
+    tiktok:  { type: String, trim: true },
+    walmart: { type: String, trim: true },
+    facebook: { type: String, trim: true },
+  },
+
+  // Per-platform description overrides
+  platformDescriptions: {
+    ebay:    { type: String, trim: true },
+    etsy:    { type: String, trim: true },
+    shopify: { type: String, trim: true },
+    amazon:  { type: String, trim: true },
+    tiktok:  { type: String, trim: true },
+    walmart: { type: String, trim: true },
+    facebook: { type: String, trim: true },
+  },
   
   platformSettings: {
     ebay: {
@@ -43,6 +65,14 @@ const listingSchema = new mongoose.Schema({
     shopify: {
       productType: String,
       weightUnit: { type: String, default: 'lb', enum: ['lb', 'oz', 'kg', 'g'] }
+    },
+    amazon: {
+      asin: String,
+      fulfillmentChannel: { type: String, default: 'MFN', enum: ['MFN', 'AFN'] }
+    },
+    tiktok: {
+      brandId: String,
+      categoryId: String
     }
   },
   

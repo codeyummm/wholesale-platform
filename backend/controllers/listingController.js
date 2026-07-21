@@ -39,23 +39,45 @@ exports.getListings = async (req, res) => {
 
 exports.createListing = async (req, res) => {
   try {
-    const { title, description, sku, price, quantity, condition, brand } = req.body;
-    
+    const {
+      title, description, sku, price, compareAtPrice,
+      quantity, condition, brand, category, tags,
+      weight, barcode, images, status,
+      platformSettings, platformTitles, platformDescriptions
+    } = req.body;
+
+    if (!title || !sku) {
+      return res.status(400).json({ success: false, message: 'Title and SKU are required.' });
+    }
+
     const newListing = new Listing({
       title,
       description,
       sku,
-      price,
-      quantity,
-      condition,
+      price: Number(price) || 0,
+      compareAtPrice: Number(compareAtPrice) || 0,
+      quantity: Number(quantity) || 0,
+      condition: condition || 'used',
       brand,
-      status: 'active'
+      category,
+      tags: tags || [],
+      weight: Number(weight) || 0,
+      barcode,
+      images: images || [],
+      status: status || 'draft',
+      platformSettings: platformSettings || {},
+      platformTitles: platformTitles || {},
+      platformDescriptions: platformDescriptions || {},
     });
 
     await newListing.save();
     res.status(201).json({ success: true, listing: newListing });
   } catch (error) {
     console.error('Error creating listing:', error);
+    // Handle Mongoose duplicate key error (duplicate SKU)
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: `SKU "${error.keyValue?.sku}" already exists. Use a unique SKU.` });
+    }
     res.status(500).json({ success: false, message: error.message || 'Server error creating listing' });
   }
 };
@@ -154,5 +176,76 @@ exports.syncToChannel = async (req, res) => {
   } catch (error) {
     console.error('Error syncing listing:', error);
     res.status(500).json({ success: false, message: 'Server error syncing listing' });
+  }
+};
+
+exports.deleteListing = async (req, res) => {
+  try {
+    const deleted = await Listing.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, message: 'Listing not found' });
+    // Also remove all channel listings
+    await ChannelListing.deleteMany({ listingId: req.params.id });
+    res.json({ success: true, message: 'Listing deleted' });
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    res.status(500).json({ success: false, message: 'Server error deleting listing' });
+  }
+};
+
+exports.bulkSync = async (req, res) => {
+  try {
+    const { listingIds, platforms } = req.body;
+    if (!listingIds?.length || !platforms?.length) {
+      return res.status(400).json({ success: false, message: 'listingIds and platforms are required' });
+    }
+
+    const jobs = [];
+    for (const listingId of listingIds) {
+      for (const platform of platforms) {
+        jobs.push({ listingId, platform });
+      }
+    }
+
+    res.json({ success: true, message: `Queued ${jobs.length} sync jobs`, total: jobs.length });
+
+    // Fire off async processing for each job
+    (async () => {
+      for (const { listingId, platform } of jobs) {
+        try {
+          const listing = await Listing.findById(listingId);
+          if (!listing) continue;
+
+          const job = new SyncJob({ listingId, platform, action: 'publish_listing', status: 'processing' });
+          await job.save();
+
+          let remoteId = null;
+          if (platform === 'ebay') {
+            const r = await ebayListingService.createEbayListing(listing, {});
+            remoteId = r.remoteId;
+          } else if (platform === 'etsy') {
+            const r = await etsyListingService.createEtsyListing(listing, {});
+            remoteId = r.remoteId;
+          } else if (platform === 'shopify') {
+            const r = await shopifyListingService.createShopifyListing(listing, {});
+            remoteId = r.remoteId;
+          }
+
+          job.status = 'completed';
+          job.completedAt = new Date();
+          await job.save();
+
+          await ChannelListing.findOneAndUpdate(
+            { listingId, platform },
+            { status: 'active', lastSyncedAt: new Date(), remoteId },
+            { upsert: true, new: true }
+          );
+        } catch (err) {
+          console.error(`Bulk sync error for ${listingId}@${platform}:`, err.message);
+        }
+      }
+    })();
+  } catch (error) {
+    console.error('Error in bulk sync:', error);
+    res.status(500).json({ success: false, message: 'Server error in bulk sync' });
   }
 };
