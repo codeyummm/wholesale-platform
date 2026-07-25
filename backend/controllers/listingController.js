@@ -7,17 +7,53 @@ const shopifyListingService = require('../services/shopifyListingService');
 
 exports.getListings = async (req, res) => {
   try {
-    // Exclude heavy fields like description and images to speed up network transfer
-    const listings = await Listing.find()
-      .select('-description -images')
-      .sort({ createdAt: -1 })
-      .lean();
+    const { page = 1, limit = 50, search = '', status = 'all', channel = 'all' } = req.query;
     
-    // Fetch all channels for these listings in ONE query to avoid the N+1 problem
+    // Construct base query
+    const query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { sku: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (status !== 'all') {
+      query.status = status;
+    }
+    
+    // If filtering by channel, we must find matching listingIds first
+    if (channel !== 'all') {
+      const channelMatches = await ChannelListing.find({ platform: channel }).select('listingId').lean();
+      query._id = { $in: channelMatches.map(c => c.listingId) };
+    }
+    
+    // Stats calculation (parallel)
+    const [totalListings, totalActive, totalDraft, syncedListingIds] = await Promise.all([
+      Listing.countDocuments(),
+      Listing.countDocuments({ status: 'active' }),
+      Listing.countDocuments({ status: 'draft' }),
+      ChannelListing.distinct('listingId')
+    ]);
+    const totalSynced = syncedListingIds.length;
+    
+    // Fetch paginated listings
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+    
+    const listings = await Listing.find(query)
+      .select('-description -images -platformDescriptions -platformTitles -platformSettings')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+      
+    const totalPages = Math.ceil((await Listing.countDocuments(query)) / limitNum);
+    
+    // Attach channels to the fetched listings
     const listingIds = listings.map(l => l._id);
     const allChannels = await ChannelListing.find({ listingId: { $in: listingIds } }).lean();
     
-    // Group channels by listingId
     const channelMap = {};
     allChannels.forEach(c => {
       const lid = c.listingId.toString();
@@ -30,7 +66,21 @@ exports.getListings = async (req, res) => {
       channels: channelMap[listing._id.toString()] || []
     }));
 
-    res.json({ success: true, listings: listingsWithChannels });
+    res.json({ 
+      success: true, 
+      listings: listingsWithChannels,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalItems: await Listing.countDocuments(query)
+      },
+      stats: {
+        totalListings,
+        totalActive,
+        totalDraft,
+        totalSynced
+      }
+    });
   } catch (error) {
     console.error('Error fetching listings:', error);
     res.status(500).json({ success: false, message: 'Server error fetching listings' });
@@ -91,13 +141,12 @@ exports.getListing = async (req, res) => {
     
     const channels = await ChannelListing.find({ listingId: listing._id });
     
-    res.json({ success: true, listing: { ...listing.toObject(), channelData: channels } });
+    res.json({ success: true, listing: { ...listing.toJSON(), channelData: channels } });
   } catch (error) {
     console.error('Error fetching listing:', error);
     res.status(500).json({ success: false, message: 'Server error fetching listing' });
   }
 };
-
 exports.updateListing = async (req, res) => {
   try {
     const updated = await Listing.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -247,5 +296,139 @@ exports.bulkSync = async (req, res) => {
   } catch (error) {
     console.error('Error in bulk sync:', error);
     res.status(500).json({ success: false, message: 'Server error in bulk sync' });
+  }
+};
+
+const axios = require('axios');
+const cheerio = require('cheerio');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const sharp = require('sharp');
+const { uploadBuffer } = require('../utils/storage');
+
+exports.fetchUrlData = async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ success: false, message: 'URL is required' });
+
+    // Fetch the HTML
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5'
+      },
+      timeout: 10000
+    });
+    
+    const html = response.data;
+    const $ = cheerio.load(html);
+    
+    const pageTitle = $('title').text() || $('meta[property="og:title"]').attr('content') || '';
+    const pageDesc = $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content') || '';
+    
+    // Extract up to 30 images
+    const images = [];
+    $('img').each((i, el) => {
+      let src = $(el).attr('src') || $(el).attr('data-src');
+      if (src && !src.startsWith('http')) {
+         if (src.startsWith('//')) src = 'https:' + src;
+         else if (src.startsWith('/')) {
+            try { src = new URL(src, url).href; } catch(e){}
+         }
+      }
+      if (src && src.startsWith('http') && !src.includes('.svg') && !src.includes('logo') && !src.includes('icon')) {
+        images.push(src);
+      }
+    });
+
+    // Extract body text, max 4000 chars to avoid huge prompts
+    const bodyText = $('body').text().replace(/\s+/g, ' ').substring(0, 4000);
+
+    const prompt = `
+    You are an expert product data extraction AI. Extract the following information from the provided raw web page text and metadata into a valid JSON object.
+    
+    Data to extract:
+    - title (string): The best, most descriptive product title.
+    - description (string): A comprehensive product description. Formatted with HTML if there are bullet points or paragraphs.
+    - brand (string): The brand of the product.
+    - category (string): The best category for the product.
+    - condition (string): "new" or "used". Default to "used" if uncertain.
+    - price (number): The price of the product as a number.
+    - sku (string): Any SKU or model number found.
+    - images (array of strings): Return up to 10 of the most relevant product images from the provided image list.
+    
+    Raw Page Title: ${pageTitle}
+    Raw Page Description: ${pageDesc}
+    Available Image URLs: ${images.slice(0, 30).join(', ')}
+    Raw Body Text (Snippet): ${bodyText}
+    
+    Return ONLY valid JSON. No markdown formatting.
+    `;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+    
+    if (text.startsWith('\`\`\`json')) {
+      text = text.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
+    }
+
+    const extractedData = JSON.parse(text);
+
+    // Download, strip metadata, inject SEO EXIF, and upload to DO Spaces
+    if (extractedData.images && Array.isArray(extractedData.images)) {
+      const processedImages = [];
+      const titleSafe = (extractedData.title || 'Product').substring(0, 100).replace(/[^a-zA-Z0-9 -]/g, '');
+      const brandSafe = (extractedData.brand || 'Unknown').substring(0, 50).replace(/[^a-zA-Z0-9 -]/g, '');
+      
+      const exifObj = {
+        IFD0: {
+          ImageDescription: titleSafe,
+          Make: brandSafe,
+          Software: 'Wholesale Platform SEO Engine'
+        }
+      };
+
+      for (const imgUrl of extractedData.images) {
+        try {
+          const imgRes = await axios({
+            method: 'GET',
+            url: imgUrl,
+            responseType: 'arraybuffer',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'image/*'
+            },
+            timeout: 8000
+          });
+          
+          // sharp strips existing metadata by default, we then inject our custom EXIF
+          const processedBuffer = await sharp(imgRes.data)
+            .jpeg({ quality: 90 })
+            .withMetadata({ exif: exifObj })
+            .toBuffer();
+
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+          const key = `uploads/${uniqueSuffix}.jpg`;
+          
+          const doSpaceUrl = await uploadBuffer(processedBuffer, key, 'image/jpeg', true);
+          processedImages.push(doSpaceUrl);
+        } catch (imgErr) {
+          console.error(`Failed to process image ${imgUrl}:`, imgErr.message);
+          // Fallback to original URL if processing fails
+          processedImages.push(imgUrl);
+        }
+      }
+      extractedData.images = processedImages;
+    }
+
+    res.json({ success: true, data: extractedData });
+  } catch (error) {
+    console.error('Error fetching URL data:', error.message);
+    if (error.response && error.response.status === 403) {
+      return res.status(403).json({ success: false, message: 'This website (like eBay/Amazon) uses aggressive bot protection that blocks our automated scraper. Please manually enter the details for this product.' });
+    }
+    res.status(500).json({ success: false, message: `Failed to extract data: ${error.message}` });
   }
 };

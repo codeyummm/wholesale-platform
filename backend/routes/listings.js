@@ -3,6 +3,7 @@ const router = express.Router();
 const listingController = require('../controllers/listingController');
 
 // All paths map to /api/listings/...
+router.post('/fetch-url', listingController.fetchUrlData);
 router.get('/', listingController.getListings);
 router.post('/', listingController.createListing);
 router.get('/:id', listingController.getListing);

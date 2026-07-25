@@ -93,7 +93,25 @@ export default function ListingEditor() {
     images: [],
     status: 'draft',
     platformSettings: {
-      ebay:    { categoryId: '9355', conditionId: '3000', returnProfileId: '', shippingProfileId: '', paymentProfileId: '' },
+      ebay:    { 
+        categoryId: '9355', 
+        conditionId: '3000', 
+        returnProfileId: '', 
+        shippingProfileId: '', 
+        paymentProfileId: '',
+        shipping: { 
+          packageWeightMajor: '', 
+          packageWeightMinor: '', 
+          packageLength: '', 
+          packageWidth: '', 
+          packageDepth: '', 
+          packageType: 'PackageThickEnvelope', 
+          shippingType: 'Flat', 
+          shippingService: 'USPSGroundAdvantage', 
+          shippingCost: '12.00', 
+          freeShipping: false 
+        }
+      },
       etsy:    { taxonomyId: '', whoMade: 'i_did', whenMade: 'made_to_order', isSupply: false, shippingProfileId: '' },
       shopify: { productType: '', weightUnit: 'lb' },
       amazon:  { asin: '', fulfillmentChannel: 'MFN' },
@@ -114,6 +132,108 @@ export default function ListingEditor() {
     return null;
   }, [formData?.title]);
 
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+  const [shippingRates, setShippingRates] = useState(null);
+  const [loadingRates, setLoadingRates] = useState(false);
+  const [shippingSearch, setShippingSearch] = useState('');
+  const [tempSelectedService, setTempSelectedService] = useState(null);
+  const [urlInput, setUrlInput] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+
+  const handleFetchUrl = async () => {
+    if (!urlInput.trim()) {
+      alert('Please enter a URL');
+      return;
+    }
+    try {
+      setIsFetchingUrl(true);
+      const res = await api.post('/listings/fetch-url', { url: urlInput });
+      if (res.data.success && res.data.data) {
+        const d = res.data.data;
+        setFormData(prev => {
+          const newImages = (d.images || []).map(url => ({
+            url,
+            alt: d.title || '',
+            isPrimary: false
+          }));
+          
+          return {
+            ...prev,
+            title: d.title || prev.title,
+            description: d.description || prev.description,
+            brand: d.brand || prev.brand,
+            category: d.category || prev.category,
+            condition: d.condition || prev.condition,
+            price: d.price || prev.price,
+            sku: d.sku || prev.sku,
+            images: prev.images.length === 0 && newImages.length > 0 
+              ? newImages.map((img, i) => i === 0 ? { ...img, isPrimary: true } : img)
+              : [...prev.images, ...newImages]
+          };
+        });
+        alert('Successfully fetched data from URL!');
+        setUrlInput('');
+      } else {
+        alert(res.data.message || 'Failed to fetch URL data');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching URL: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsFetchingUrl(false);
+    }
+  };
+
+  const fetchShippingRates = async () => {
+    try {
+      setLoadingRates(true);
+      const ship = formData?.platformSettings?.ebay?.shipping || {};
+      const res = await api.post('/ebay/shipping-rates', {
+        weightMajor: ship.packageWeightMajor,
+        weightMinor: ship.packageWeightMinor,
+        length: ship.packageLength,
+        width: ship.packageWidth,
+        depth: ship.packageDepth
+      });
+      if (res.data.success) {
+        setShippingRates(res.data.rates);
+        setTempSelectedService(ship.shippingService || 'USPSGroundAdvantage');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingRates(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchShippingRates();
+  }, [
+    formData?.platformSettings?.ebay?.shipping?.packageWeightMajor,
+    formData?.platformSettings?.ebay?.shipping?.packageWeightMinor,
+    formData?.platformSettings?.ebay?.shipping?.packageLength,
+    formData?.platformSettings?.ebay?.shipping?.packageWidth,
+    formData?.platformSettings?.ebay?.shipping?.packageDepth
+  ]);
+
+  useEffect(() => {
+    if (isShippingModalOpen && !shippingRates) {
+      fetchShippingRates();
+    }
+  }, [isShippingModalOpen]);
+
+  // Helper to find the current active service in rates
+  let activeServiceObj = null;
+  if (shippingRates) {
+    const activeId = formData?.platformSettings?.ebay?.shipping?.shippingService || 'USPSGroundAdvantage';
+    ['recommended', 'economy', 'standard'].forEach(cat => {
+      if (shippingRates[cat]) {
+        const found = shippingRates[cat].find(s => s.id === activeId);
+        if (found) activeServiceObj = found;
+      }
+    });
+  }
+
   useEffect(() => { if (id) fetchListing(); }, [id]);
 
   const fetchListing = async () => {
@@ -125,7 +245,14 @@ export default function ListingEditor() {
           ...prev,
           ...l,
           platformSettings: {
-            ebay:    { ...prev.platformSettings.ebay,    ...(l.platformSettings?.ebay    || {}) },
+            ebay:    { 
+              ...prev.platformSettings.ebay,    
+              ...(l.platformSettings?.ebay || {}),
+              shipping: {
+                ...(prev.platformSettings.ebay?.shipping || {}),
+                ...(l.platformSettings?.ebay?.shipping || {})
+              }
+            },
             etsy:    { ...prev.platformSettings.etsy,    ...(l.platformSettings?.etsy    || {}) },
             shopify: { ...prev.platformSettings.shopify, ...(l.platformSettings?.shopify || {}) },
             amazon:  { ...prev.platformSettings.amazon,  ...(l.platformSettings?.amazon  || {}) },
@@ -451,6 +578,43 @@ export default function ListingEditor() {
         {activeTab === 'core' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-5">
+            
+              {/* Auto-Fill URL Section */}
+              <Card className="border border-indigo-100 shadow-sm overflow-hidden">
+                <div className="bg-indigo-50/50 px-5 py-3 border-b border-indigo-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-indigo-700 font-medium">
+                    <Sparkles size={16} className="text-indigo-500" />
+                    Auto-Fill from URL
+                  </div>
+                </div>
+                <CardContent className="p-5">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Globe className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                      <Input
+                        type="url"
+                        placeholder="Paste an Amazon, Shopify, or Walmart product URL..."
+                        value={urlInput}
+                        onChange={e => setUrlInput(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleFetchUrl} 
+                      disabled={isFetchingUrl || !urlInput.trim()}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      {isFetchingUrl ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                      Fetch Data
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    AI will automatically extract the title, description, brand, pricing, and images from the link.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Basic Information */}
               {/* Title & Description */}
               <Card>
                 <CardHeader>
@@ -966,38 +1130,505 @@ export default function ListingEditor() {
                 <CardTitle className="text-base flex items-center gap-2 mb-2"><PlatformLogo platform="ebay" size={16} /> eBay Settings</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="block mb-1">Category ID</Label>
-                    <Input type="text" value={formData.platformSettings.ebay.categoryId} onChange={e => handlePlatformChange('ebay', 'categoryId', e.target.value)} />
+                <div className="text-sm text-gray-500 mb-6">Configure extensive options for your eBay listing to ensure accurate mapping and search visibility.</div>
+                
+                {/* Listing Details & Condition */}
+                <div className="space-y-4 border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                  <h4 className="font-semibold text-sm text-gray-700">Listing Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block mb-1 text-xs">Category ID</Label>
+                      <Input type="text" className="h-9" value={formData.platformSettings.ebay.categoryId || ''} onChange={e => handlePlatformChange('ebay', 'categoryId', e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="block mb-1 text-xs">Store Category ID</Label>
+                      <Input type="text" className="h-9" value={formData.platformSettings.ebay.storeCategoryId || ''} onChange={e => handlePlatformChange('ebay', 'storeCategoryId', e.target.value)} />
+                    </div>
                   </div>
-                  <div>
-                    <Label className="block mb-1">Condition ID</Label>
-                    <select value={formData.platformSettings.ebay.conditionId} onChange={e => handlePlatformChange('ebay', 'conditionId', e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
-                      <option value="1000">New</option>
-                      <option value="2000">Manufacturer Refurbished</option>
-                      <option value="2500">Seller Refurbished</option>
-                      <option value="3000">Used</option>
-                      <option value="4000">Very Good</option>
-                      <option value="5000">Good</option>
-                      <option value="6000">Acceptable</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="block mb-1">Return Profile ID</Label>
-                    <Input type="text" value={formData.platformSettings.ebay.returnProfileId} onChange={e => handlePlatformChange('ebay', 'returnProfileId', e.target.value)} placeholder="From eBay Seller Hub" />
-                  </div>
-                  <div>
-                    <Label className="block mb-1">Shipping Profile ID</Label>
-                    <Input type="text" value={formData.platformSettings.ebay.shippingProfileId} onChange={e => handlePlatformChange('ebay', 'shippingProfileId', e.target.value)} placeholder="From eBay Seller Hub" />
-                  </div>
-                  <div>
-                    <Label className="block mb-1">Payment Profile ID</Label>
-                    <Input type="text" value={formData.platformSettings.ebay.paymentProfileId} onChange={e => handlePlatformChange('ebay', 'paymentProfileId', e.target.value)} placeholder="From eBay Seller Hub" />
+                  
+                  <div className="pt-2">
+                    <Label className="block mb-3 text-sm font-semibold text-gray-700">Item condition</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="block mb-1 text-xs">Condition ID</Label>
+                        <select value={formData.platformSettings.ebay.conditionId || '1000'} onChange={e => handlePlatformChange('ebay', 'conditionId', e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500">
+                          <option value="1000">New</option>
+                          <option value="2000">Manufacturer Refurbished</option>
+                          <option value="2500">Seller Refurbished</option>
+                          <option value="3000">Used</option>
+                          <option value="4000">Very Good</option>
+                          <option value="5000">Good</option>
+                          <option value="6000">Acceptable</option>
+                          <option value="7000">For parts or not working</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="block mb-1 text-xs">Condition Description (Optional)</Label>
+                        <Input type="text" className="h-9" value={formData.platformSettings.ebay.conditionDescription || ''} onChange={e => handlePlatformChange('ebay', 'conditionDescription', e.target.value)} placeholder="e.g. Minor scratches on back" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 p-3 bg-red-50 rounded-lg">
-                  <p className="text-xs text-red-700"><strong>eBay Rules:</strong> Max 80 chars title. No promo language. Signature confirmation required on orders $750+. Parts & Accessories need 30-day free returns.</p>
+
+                {/* Pricing & Formats */}
+                <div className="mt-6 space-y-4 border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                   <h4 className="font-semibold text-sm text-gray-700">Pricing & Formats</h4>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div>
+                       <Label className="block mb-1 text-xs">Format</Label>
+                       <select value={formData.platformSettings.ebay.format || 'FixedPrice'} onChange={e => {
+                         handlePlatformChange('ebay', 'format', e.target.value);
+                         if (e.target.value === 'Auction') {
+                           handlePlatformChange('ebay', 'duration', 'Days_7');
+                         } else {
+                           handlePlatformChange('ebay', 'duration', 'GTC');
+                         }
+                       }} className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500">
+                         <option value="FixedPrice">Buy It Now (FixedPrice)</option>
+                         <option value="Auction">Auction</option>
+                       </select>
+                     </div>
+                     <div>
+                       <Label className="block mb-1 text-xs">Duration</Label>
+                       <select value={formData.platformSettings.ebay.duration || 'GTC'} onChange={e => handlePlatformChange('ebay', 'duration', e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500">
+                         {formData.platformSettings.ebay.format === 'Auction' ? (
+                           <>
+                             <option value="Days_1">1 Day</option>
+                             <option value="Days_3">3 Days</option>
+                             <option value="Days_5">5 Days</option>
+                             <option value="Days_7">7 Days</option>
+                             <option value="Days_10">10 Days</option>
+                           </>
+                         ) : (
+                           <option value="GTC">Good 'Til Cancelled</option>
+                         )}
+                       </select>
+                     </div>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                     <div>
+                       <Label className="block mb-1 text-xs">Item Price</Label>
+                       <div className="relative">
+                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                         <Input type="number" className="h-9 pl-7" value={formData.price || ''} onChange={e => handleInput({ target: { name: 'price', value: e.target.value } })} placeholder="0.00" />
+                       </div>
+                     </div>
+                     {formData.platformSettings.ebay.format === 'Auction' ? (
+                       <>
+                         <div>
+                           <Label className="block mb-1 text-xs">Buy It Now price</Label>
+                           <div className="relative">
+                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                             <Input type="number" className="h-9 pl-7" value={formData.platformSettings.ebay.buyItNowPrice || ''} onChange={e => handlePlatformChange('ebay', 'buyItNowPrice', e.target.value)} placeholder="0.00" />
+                           </div>
+                         </div>
+                         <div>
+                           <Label className="block mb-1 text-xs">Reserve price</Label>
+                           <div className="relative">
+                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                             <Input type="number" className="h-9 pl-7" value={formData.platformSettings.ebay.reservePrice || ''} onChange={e => handlePlatformChange('ebay', 'reservePrice', e.target.value)} placeholder="0.00" />
+                           </div>
+                         </div>
+                       </>
+                     ) : (
+                       <div>
+                         <Label className="block mb-1 text-xs">Cost (Internal)</Label>
+                         <div className="relative">
+                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                           <Input type="number" className="h-9 pl-7" value={formData.cost || ''} onChange={e => handleInput({ target: { name: 'cost', value: e.target.value } })} placeholder="0.00" />
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                   
+                   {formData.platformSettings.ebay.format !== 'Auction' && (
+                     <div className="pt-2">
+                       <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                         <input type="checkbox" checked={formData.platformSettings.ebay.requireImmediatePayment || false} onChange={e => handlePlatformChange('ebay', 'requireImmediatePayment', e.target.checked)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                         <span>Require immediate payment when buyer uses Buy It Now</span>
+                       </label>
+                     </div>
+                   )}
+                </div>
+
+                {/* Allow Offers (Standalone) */}
+                <div className="mt-6 space-y-4 border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-700">Allow offers (optional)</h4>
+                      <p className="text-xs text-gray-500 mt-1">Interested buyers can send an offer for this item. You can accept, counter, or decline.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={formData.platformSettings.ebay.bestOfferEnabled || false} 
+                        onChange={e => handlePlatformChange('ebay', 'bestOfferEnabled', e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                  
+                  {formData.platformSettings.ebay.bestOfferEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-100 mt-3">
+                      <div>
+                        <Label className="block mb-1 text-xs">Minimum offer</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <Input type="number" className="h-9 pl-7" value={formData.platformSettings.ebay.bestOfferAutoDecline || ''} onChange={e => handlePlatformChange('ebay', 'bestOfferAutoDecline', e.target.value)} placeholder="0.00" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="block mb-1 text-xs">Auto accept</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <Input type="number" className="h-9 pl-7" value={formData.platformSettings.ebay.bestOfferAutoAccept || ''} onChange={e => handlePlatformChange('ebay', 'bestOfferAutoAccept', e.target.value)} placeholder="0.00" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Item Specifics */}
+                <div className="mt-6 border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                  <div className="flex justify-between items-center mb-4">
+                     <div>
+                       <Label className="block text-sm font-semibold text-gray-700 uppercase">Item Specifics</Label>
+                     </div>
+                     <div className="flex items-center space-x-2">
+                       {/* eBay AutoFill Button */}
+                       <button
+                         type="button"
+                         onClick={async () => {
+                           if (!formData.title) {
+                              alert('Please enter a title first to auto-fill specs.');
+                              return;
+                           }
+                           try {
+                              const btn = document.getElementById('autofill-btn');
+                              if (btn) btn.innerHTML = '<span class="animate-spin inline-block mr-2">⟳</span> Fetching...';
+                              
+                              const res = await fetch(`http://localhost:5000/api/ebay/catalog/search?q=${encodeURIComponent(formData.title)}`, {
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                              });
+                              const data = await res.json();
+                              
+                              if (btn) btn.innerHTML = '<span class="mr-1">✨</span> Auto-Fill from eBay';
+                              
+                              if (data.success && data.itemSpecifics) {
+                                 const currentSpecs = formData.platformSettings?.ebay?.itemSpecifics || {};
+                                 const newSpecs = { ...currentSpecs };
+                                 let addedCount = 0;
+                                 
+                                 for (const [k, v] of Object.entries(data.itemSpecifics)) {
+                                   if (!newSpecs[k]) {
+                                     newSpecs[k] = v;
+                                     addedCount++;
+                                   }
+                                 }
+                                 
+                                 if (addedCount > 0) {
+                                   handlePlatformChange('ebay', 'itemSpecifics', newSpecs);
+                                   alert(`Auto-filled ${addedCount} item specific(s) successfully!`);
+                                 } else {
+                                   alert('No new specifics found or all fields were already filled.');
+                                 }
+                              } else {
+                                 alert(data.message || 'Could not find matching device in catalog.');
+                              }
+                           } catch (err) {
+                              console.error(err);
+                              alert('Error fetching specs.');
+                              const btn = document.getElementById('autofill-btn');
+                              if (btn) btn.innerHTML = '<span class="mr-1">✨</span> Auto-Fill from eBay';
+                           }
+                         }}
+                         id="autofill-btn"
+                         className="flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm"
+                       >
+                         <span className="mr-1">✨</span> Auto-Fill from eBay
+                       </button>
+
+                       {/* Gemini AI AutoFill Button */}
+                       <button
+                         type="button"
+                         onClick={async () => {
+                           if (!formData.title) {
+                              alert('Please enter a title first to auto-fill specs.');
+                              return;
+                           }
+                           try {
+                              const btn = document.getElementById('gemini-btn');
+                              if (btn) btn.innerHTML = '<span class="animate-spin inline-block mr-2">⟳</span> Analyzing...';
+                              
+                              const res = await fetch(`http://localhost:5000/api/ai/extract-specs`, {
+                                method: 'POST',
+                                headers: { 
+                                  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                  'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ title: formData.title })
+                              });
+                              const data = await res.json();
+                              
+                              if (btn) btn.innerHTML = '<span class="mr-1">🤖</span> Auto-Fill with Gemini';
+                              
+                              if (data.success && data.itemSpecifics) {
+                                 const currentSpecs = formData.platformSettings?.ebay?.itemSpecifics || {};
+                                 const newSpecs = { ...currentSpecs };
+                                 let addedCount = 0;
+                                 
+                                 for (const [k, v] of Object.entries(data.itemSpecifics)) {
+                                   if (v && v.trim() !== '' && !newSpecs[k]) {
+                                     newSpecs[k] = v;
+                                     addedCount++;
+                                   }
+                                 }
+                                 
+                                 if (addedCount > 0) {
+                                   handlePlatformChange('ebay', 'itemSpecifics', newSpecs);
+                                   alert(`Auto-filled ${addedCount} item specific(s) using Gemini AI!`);
+                                 } else {
+                                   alert('No new specifics found or all fields were already filled.');
+                                 }
+                              } else {
+                                 alert(data.message || 'Gemini could not extract specs.');
+                              }
+                           } catch (err) {
+                              console.error(err);
+                              alert('Error extracting specs with Gemini.');
+                              const btn = document.getElementById('gemini-btn');
+                              if (btn) btn.innerHTML = '<span class="mr-1">🤖</span> Auto-Fill with Gemini';
+                           }
+                         }}
+                         id="gemini-btn"
+                         className="flex items-center text-xs font-medium text-purple-600 bg-purple-50 px-3 py-1.5 rounded-full hover:bg-purple-100 transition-colors border border-purple-200 shadow-sm"
+                       >
+                         <span className="mr-1">🤖</span> Auto-Fill with Gemini
+                       </button>
+                     </div>
+                  </div>
+                  
+                  <div className="space-y-6 bg-white p-4 border rounded-md">
+                    {/* Required Specifics */}
+                    <div>
+                      <div className="mb-3">
+                         <h5 className="font-bold text-sm text-gray-800">Required</h5>
+                         <p className="text-xs text-gray-500">Buyers need these details to find your item.</p>
+                      </div>
+                      <div className="space-y-3">
+                        {[
+                          'Brand', 'Model', 'Storage Capacity', 'Color'
+                        ].map(spec => (
+                          <div key={spec} className="grid grid-cols-1 md:grid-cols-3 items-center gap-2 border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                             <Label className="text-sm font-medium text-gray-700 md:col-span-1">{spec}</Label>
+                             <Input 
+                               type="text" 
+                               className="h-9 md:col-span-2 text-sm" 
+                               placeholder={`Enter ${spec}`}
+                               value={formData.platformSettings?.ebay?.itemSpecifics?.[spec] || ''} 
+                               onChange={e => {
+                                 const newSpecifics = { ...(formData.platformSettings.ebay.itemSpecifics || {}) };
+                                 if (e.target.value) {
+                                   newSpecifics[spec] = e.target.value;
+                                 } else {
+                                   delete newSpecifics[spec];
+                                 }
+                                 handlePlatformChange('ebay', 'itemSpecifics', newSpecifics);
+                               }} 
+                             />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Additional Specifics */}
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="mb-3">
+                         <h5 className="font-bold text-sm text-gray-800">Additional</h5>
+                         <p className="text-xs text-gray-500">Add more details to help buyers decide.</p>
+                      </div>
+                      <div className="space-y-3">
+                        {[
+                          'UPC', 'ePID', 'MPN', 'Network', 'Screen Size', 'RAM', 'Processor', 'Operating System', 'Features'
+                        ].map(spec => (
+                          <div key={spec} className="grid grid-cols-1 md:grid-cols-3 items-center gap-2 border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                             <Label className="text-sm font-medium text-gray-700 md:col-span-1">{spec}</Label>
+                             <Input 
+                               type="text" 
+                               className="h-9 md:col-span-2 text-sm" 
+                               placeholder={`Enter ${spec}`}
+                               value={formData.platformSettings?.ebay?.itemSpecifics?.[spec] || ''} 
+                               onChange={e => {
+                                 const newSpecifics = { ...(formData.platformSettings.ebay.itemSpecifics || {}) };
+                                 if (e.target.value) {
+                                   newSpecifics[spec] = e.target.value;
+                                 } else {
+                                   delete newSpecifics[spec];
+                                 }
+                                 handlePlatformChange('ebay', 'itemSpecifics', newSpecifics);
+                               }} 
+                             />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping & Fulfillment */}
+                <div className="mt-6 space-y-6">
+                  {/* Package Details */}
+                  <div className="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                     <h4 className="font-semibold text-sm text-gray-700 mb-3">Package Details</h4>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <div>
+                         <Label className="block mb-2 text-xs font-semibold text-gray-800">Package weight <span className="text-gray-500 font-normal">(optional)</span></Label>
+                         <div className="flex items-center space-x-2">
+                           <div className="relative w-24">
+                             <Input type="number" className="h-9 pr-8" placeholder="0" value={formData.platformSettings.ebay.shipping?.packageWeightMajor || ''} onChange={e => {
+                                const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), packageWeightMajor: e.target.value };
+                                handlePlatformChange('ebay', 'shipping', newShipping);
+                             }} />
+                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">lbs.</span>
+                           </div>
+                           <div className="relative w-24">
+                             <Input type="number" className="h-9 pr-8" placeholder="0" value={formData.platformSettings.ebay.shipping?.packageWeightMinor || ''} onChange={e => {
+                                const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), packageWeightMinor: e.target.value };
+                                handlePlatformChange('ebay', 'shipping', newShipping);
+                             }} />
+                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">oz.</span>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       <div>
+                         <Label className="block mb-2 text-xs font-semibold text-gray-800">Package dimensions <span className="text-gray-500 font-normal">(optional)</span></Label>
+                         <div className="flex items-center space-x-2">
+                           <div className="relative w-20">
+                             <Input type="number" className="h-9 pr-6" placeholder="L" value={formData.platformSettings.ebay.shipping?.packageLength || ''} onChange={e => {
+                                const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), packageLength: e.target.value };
+                                handlePlatformChange('ebay', 'shipping', newShipping);
+                             }} />
+                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">in.</span>
+                           </div>
+                           <span className="text-gray-400 text-sm">x</span>
+                           <div className="relative w-20">
+                             <Input type="number" className="h-9 pr-6" placeholder="W" value={formData.platformSettings.ebay.shipping?.packageWidth || ''} onChange={e => {
+                                const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), packageWidth: e.target.value };
+                                handlePlatformChange('ebay', 'shipping', newShipping);
+                             }} />
+                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">in.</span>
+                           </div>
+                           <span className="text-gray-400 text-sm">x</span>
+                           <div className="relative w-20">
+                             <Input type="number" className="h-9 pr-6" placeholder="H" value={formData.platformSettings.ebay.shipping?.packageDepth || ''} onChange={e => {
+                                const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), packageDepth: e.target.value };
+                                handlePlatformChange('ebay', 'shipping', newShipping);
+                             }} />
+                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">in.</span>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     <p className="text-xs text-gray-500 mt-2 mb-4">These details are an estimate based on listings like yours: 2 lbs 0 oz, 10.0 x 8.0 x 4.0 in.</p>
+                     
+                     <label className="flex items-start space-x-2 text-sm text-gray-800 cursor-pointer">
+                       <input type="checkbox" className="rounded border-gray-400 text-blue-600 focus:ring-blue-500 mt-0.5" checked={formData.platformSettings.ebay.shipping?.packageType === 'Irregular'} onChange={e => {
+                          const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), packageType: e.target.checked ? 'Irregular' : 'PackageThickEnvelope' };
+                          handlePlatformChange('ebay', 'shipping', newShipping);
+                       }} />
+                       <div>
+                         <span className="font-semibold block">Irregular package</span>
+                         <span className="text-gray-500 text-xs">Carriers may charge extra for items not shipped in standard packages. <a href="#" className="underline">Learn more</a></span>
+                       </div>
+                     </label>
+                  </div>
+
+                  {/* Domestic Shipping */}
+                  <div className="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                     <h4 className="font-semibold text-sm text-gray-700 mb-4">Domestic shipping</h4>
+                     
+                     <div className="mb-6 w-full md:w-1/2">
+                       <Label className="block mb-2 text-xs text-gray-800">Cost type</Label>
+                       <select value={formData.platformSettings.ebay.shipping?.shippingType || 'Flat'} onChange={e => {
+                          const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), shippingType: e.target.value };
+                          handlePlatformChange('ebay', 'shipping', newShipping);
+                       }} className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
+                         <option value="Flat">Flat: Same cost to all buyers</option>
+                         <option value="Calculated">Calculated: Cost varies by buyer location</option>
+                       </select>
+                     </div>
+
+                     <div className="mb-4">
+                       <Label className="block mb-2 text-xs font-semibold text-gray-800">Primary service</Label>
+                       <div className="border border-gray-200 bg-white rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center relative">
+                         <div className="flex items-start gap-4">
+                           <div className="w-16 h-12 flex items-center justify-center bg-gray-50 rounded">
+                             <img src={activeServiceObj ? activeServiceObj.logo : "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/USPS_logo_with_wordmark.svg/320px-USPS_logo_with_wordmark.svg.png"} alt="Carrier" className="max-h-full max-w-full object-contain" />
+                           </div>
+                           <div className="text-sm">
+                             <div className="font-semibold text-gray-800">{activeServiceObj ? activeServiceObj.name : 'USPS Ground Advantage'}</div>
+                             <div className="text-gray-600">{activeServiceObj ? activeServiceObj.transit : '2 - 5 business days'}</div>
+                             <div className="text-gray-600">Insurance {activeServiceObj ? activeServiceObj.insurance : '$100.00'}</div>
+                             <div className="text-gray-600">Tracking included: {activeServiceObj ? (activeServiceObj.tracking ? 'Yes' : 'No') : 'Yes'}</div>
+                             <div className="text-gray-600">Max. {activeServiceObj ? activeServiceObj.maxWeight : '70 lb'}</div>
+                             {formData.platformSettings.ebay.shipping?.shippingType === 'Flat' && (
+                               <>
+                                 <div className="mt-1 font-semibold text-gray-700">
+                                   ${activeServiceObj ? activeServiceObj.minPrice.toFixed(2) : '6.57'} - ${activeServiceObj ? activeServiceObj.maxPrice.toFixed(2) : '11.84'} 
+                                   <span className="line-through text-gray-400 font-normal ml-1">${activeServiceObj ? (activeServiceObj.minPrice * 1.5).toFixed(2) : '10.80'} - ${activeServiceObj ? (activeServiceObj.maxPrice * 1.5).toFixed(2) : '19.05'}</span>
+                                 </div>
+                                 <div className="text-green-700 font-medium mt-0.5">Save when you buy a label on eBay</div>
+                               </>
+                             )}
+                           </div>
+                         </div>
+                         
+                         <div className="mt-4 md:mt-0 flex items-center gap-3 border-l border-gray-100 pl-4 ml-4 h-full min-h-[80px]">
+                           {formData.platformSettings.ebay.shipping?.shippingType === 'Calculated' ? (
+                             <div>
+                               <Label className="block text-[13px] font-bold text-gray-900 mb-1">Buyer pays:</Label>
+                               <div className="font-bold text-gray-600">
+                                 ${activeServiceObj ? activeServiceObj.minPrice.toFixed(2) : '6.57'} - ${activeServiceObj ? activeServiceObj.maxPrice.toFixed(2) : '11.84'} 
+                                 <span className="line-through text-gray-400 font-normal ml-1">${activeServiceObj ? (activeServiceObj.minPrice * 1.5).toFixed(2) : '10.80'} - ${activeServiceObj ? (activeServiceObj.maxPrice * 1.5).toFixed(2) : '19.05'}</span>
+                               </div>
+                               <div className="text-green-700 font-medium mt-0.5 text-sm">Save when you buy a label on eBay</div>
+                             </div>
+                           ) : (
+                             <div className="border border-gray-300 rounded-md p-2 w-48 bg-gray-50/50">
+                               <Label className="block text-[11px] text-gray-500 mb-1">Buyer pays</Label>
+                               <div className="relative">
+                                 <span className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-800 font-medium">$</span>
+                                 <Input type="number" className="h-6 py-0 pr-0 pl-5 text-sm font-medium border-0 focus-visible:ring-0 shadow-none bg-transparent" placeholder="" value={formData.platformSettings.ebay.shipping?.shippingCost || ''} onChange={e => {
+                                    const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), shippingCost: e.target.value };
+                                    handlePlatformChange('ebay', 'shipping', newShipping);
+                                 }} />
+                               </div>
+                             </div>
+                           )}
+                           
+                           <button onClick={() => setIsShippingModalOpen(true)} className="h-8 w-8 rounded-full hover:bg-gray-100 flex flex-col justify-center items-center text-gray-600 transition-colors self-center">
+                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                           </button>
+                         </div>
+                       </div>
+                     </div>
+
+                     <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                       <label className="flex items-start space-x-3 text-sm text-gray-800 cursor-pointer">
+                         <input type="checkbox" className="rounded border-gray-400 text-blue-600 focus:ring-blue-500 mt-1 w-4 h-4" checked={formData.platformSettings.ebay.shipping?.freeShipping || false} onChange={e => {
+                            const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), freeShipping: e.target.checked };
+                            handlePlatformChange('ebay', 'shipping', newShipping);
+                         }} />
+                         <div>
+                           <span className="font-bold block">Offer free shipping</span>
+                           <span className="text-gray-600 text-xs block mt-0.5">Entice buyers by offering free shipping for your primary shipping service.</span>
+                         </div>
+                       </label>
+                     </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1309,6 +1940,326 @@ export default function ListingEditor() {
                 )}
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Shipping Service Modal */}
+      <Dialog open={isShippingModalOpen} onOpenChange={setIsShippingModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b relative">
+            <DialogTitle className="text-center text-lg font-bold">Change service</DialogTitle>
+            <button onClick={() => setIsShippingModalOpen(false)} className="absolute right-4 top-4 text-blue-600 hover:text-blue-800 text-sm font-semibold">Done</button>
+          </DialogHeader>
+          
+          <div className="px-6 py-4 border-b bg-gray-50/50">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <Input 
+                type="text" 
+                placeholder="Find a shipping service" 
+                className="pl-9 h-10"
+                value={shippingSearch}
+                onChange={e => setShippingSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-8">
+            {loadingRates ? (
+              <div className="flex justify-center items-center h-32 text-gray-500">Loading rates...</div>
+            ) : shippingRates ? (
+              <>
+                {/* Selected / Recommended */}
+                {shippingRates.recommended && shippingRates.recommended.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-4 text-lg">Selected</h3>
+                    <div className="space-y-4">
+                      {shippingRates.recommended.map(service => (
+                        <label key={service.id} className="flex items-start gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="shippingService"
+                            value={service.id}
+                            checked={tempSelectedService === service.id}
+                            onChange={() => setTempSelectedService(service.id)}
+                            className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-600 rounded border border-blue-200">RECOMMENDED</span>
+                            </div>
+                            <div className="font-semibold text-gray-900 mt-1 group-hover:text-blue-600 transition-colors">{service.name}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{service.transit}</div>
+                            <div className="text-gray-500 text-sm">Insurance {service.insurance}</div>
+                            <div className="text-gray-500 text-sm">Tracking included: {service.tracking ? 'Yes' : 'No'}</div>
+                            <div className="text-gray-500 text-sm">Max. {service.maxWeight}</div>
+                            <div className="font-semibold text-gray-900 mt-1">
+                              $\\{service.minPrice.toFixed(2)} - $\\{service.maxPrice.toFixed(2)}
+                            </div>
+                            <div className="text-green-700 text-sm font-medium mt-0.5">Save when you buy a label on eBay</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Economy Services */}
+                {shippingRates.economy && shippingRates.economy.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-4 text-lg">Economy services</h3>
+                    <div className="space-y-6">
+                      {shippingRates.economy.map(service => (
+                        <label key={service.id} className="flex items-start gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="shippingService"
+                            value={service.id}
+                            checked={tempSelectedService === service.id}
+                            onChange={() => setTempSelectedService(service.id)}
+                            className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{service.name}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{service.transit}</div>
+                            <div className="text-gray-500 text-sm">Insurance {service.insurance}</div>
+                            <div className="text-gray-500 text-sm">Tracking included: {service.tracking ? 'Yes' : 'No'}</div>
+                            <div className="text-gray-500 text-sm">Max. {service.maxWeight}</div>
+                            <div className="font-semibold text-gray-900 mt-1">
+                              $\\{service.minPrice.toFixed(2)} - $\\{service.maxPrice.toFixed(2)}
+                            </div>
+                            <div className="text-green-700 text-sm font-medium mt-0.5">Save when you buy a label on eBay</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Standard Services */}
+                {shippingRates.standard && shippingRates.standard.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-4 text-lg">Standard services</h3>
+                    <div className="space-y-6">
+                      {shippingRates.standard.map(service => (
+                        <label key={service.id} className="flex items-start gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="shippingService"
+                            value={service.id}
+                            checked={tempSelectedService === service.id}
+                            onChange={() => setTempSelectedService(service.id)}
+                            className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{service.name}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{service.transit}</div>
+                            <div className="text-gray-500 text-sm">Insurance {service.insurance}</div>
+                            <div className="text-gray-500 text-sm">Tracking included: {service.tracking ? 'Yes' : 'No'}</div>
+                            <div className="text-gray-500 text-sm">Max. {service.maxWeight}</div>
+                            <div className="font-semibold text-gray-900 mt-1">
+                              $\\{service.minPrice.toFixed(2)} - $\\{service.maxPrice.toFixed(2)}
+                            </div>
+                            <div className="text-green-700 text-sm font-medium mt-0.5">Save when you buy a label on eBay</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-center items-center h-32 text-gray-500">No rates available.</div>
+            )}
+          </div>
+          
+          <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsShippingModalOpen(false)}>Cancel</Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={() => {
+                if (tempSelectedService && shippingRates) {
+                  // Find the service in any category to get its price
+                  let selectedServiceObj = null;
+                  ['recommended', 'economy', 'standard'].forEach(cat => {
+                    if (shippingRates[cat]) {
+                      const found = shippingRates[cat].find(s => s.id === tempSelectedService);
+                      if (found) selectedServiceObj = found;
+                    }
+                  });
+                  
+                  const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), shippingService: tempSelectedService };
+                  if (selectedServiceObj) {
+                     newShipping.shippingCost = selectedServiceObj.maxPrice.toFixed(2);
+                  }
+                  handlePlatformChange('ebay', 'shipping', newShipping);
+                }
+                setIsShippingModalOpen(false);
+              }}
+            >
+              Apply Selection
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Shipping Service Modal */}
+      <Dialog open={isShippingModalOpen} onOpenChange={setIsShippingModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b relative">
+            <DialogTitle className="text-center text-lg font-bold">Change service</DialogTitle>
+            <button onClick={() => setIsShippingModalOpen(false)} className="absolute right-4 top-4 text-blue-600 hover:text-blue-800 text-sm font-semibold">Done</button>
+          </DialogHeader>
+          
+          <div className="px-6 py-4 border-b bg-gray-50/50">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <Input 
+                type="text" 
+                placeholder="Find a shipping service" 
+                className="pl-9 h-10"
+                value={shippingSearch}
+                onChange={e => setShippingSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-8">
+            {loadingRates ? (
+              <div className="flex justify-center items-center h-32 text-gray-500">Loading rates...</div>
+            ) : shippingRates ? (
+              <>
+                {/* Selected / Recommended */}
+                {shippingRates.recommended && shippingRates.recommended.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-4 text-lg">Selected</h3>
+                    <div className="space-y-4">
+                      {shippingRates.recommended.map(service => (
+                        <label key={service.id} className="flex items-start gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="shippingService"
+                            value={service.id}
+                            checked={tempSelectedService === service.id}
+                            onChange={() => setTempSelectedService(service.id)}
+                            className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-600 rounded border border-blue-200">RECOMMENDED</span>
+                            </div>
+                            <div className="font-semibold text-gray-900 mt-1 group-hover:text-blue-600 transition-colors">{service.name}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{service.transit}</div>
+                            <div className="text-gray-500 text-sm">Insurance {service.insurance}</div>
+                            <div className="text-gray-500 text-sm">Tracking included: {service.tracking ? 'Yes' : 'No'}</div>
+                            <div className="text-gray-500 text-sm">Max. {service.maxWeight}</div>
+                            <div className="font-semibold text-gray-900 mt-1">
+                              $\\{service.minPrice.toFixed(2)} - $\\{service.maxPrice.toFixed(2)}
+                            </div>
+                            <div className="text-green-700 text-sm font-medium mt-0.5">Save when you buy a label on eBay</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Economy Services */}
+                {shippingRates.economy && shippingRates.economy.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-4 text-lg">Economy services</h3>
+                    <div className="space-y-6">
+                      {shippingRates.economy.map(service => (
+                        <label key={service.id} className="flex items-start gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="shippingService"
+                            value={service.id}
+                            checked={tempSelectedService === service.id}
+                            onChange={() => setTempSelectedService(service.id)}
+                            className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{service.name}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{service.transit}</div>
+                            <div className="text-gray-500 text-sm">Insurance {service.insurance}</div>
+                            <div className="text-gray-500 text-sm">Tracking included: {service.tracking ? 'Yes' : 'No'}</div>
+                            <div className="text-gray-500 text-sm">Max. {service.maxWeight}</div>
+                            <div className="font-semibold text-gray-900 mt-1">
+                              $\\{service.minPrice.toFixed(2)} - $\\{service.maxPrice.toFixed(2)}
+                            </div>
+                            <div className="text-green-700 text-sm font-medium mt-0.5">Save when you buy a label on eBay</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Standard Services */}
+                {shippingRates.standard && shippingRates.standard.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-4 text-lg">Standard services</h3>
+                    <div className="space-y-6">
+                      {shippingRates.standard.map(service => (
+                        <label key={service.id} className="flex items-start gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="shippingService"
+                            value={service.id}
+                            checked={tempSelectedService === service.id}
+                            onChange={() => setTempSelectedService(service.id)}
+                            className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{service.name}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{service.transit}</div>
+                            <div className="text-gray-500 text-sm">Insurance {service.insurance}</div>
+                            <div className="text-gray-500 text-sm">Tracking included: {service.tracking ? 'Yes' : 'No'}</div>
+                            <div className="text-gray-500 text-sm">Max. {service.maxWeight}</div>
+                            <div className="font-semibold text-gray-900 mt-1">
+                              $\\{service.minPrice.toFixed(2)} - $\\{service.maxPrice.toFixed(2)}
+                            </div>
+                            <div className="text-green-700 text-sm font-medium mt-0.5">Save when you buy a label on eBay</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-center items-center h-32 text-gray-500">No rates available.</div>
+            )}
+          </div>
+          
+          <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsShippingModalOpen(false)}>Cancel</Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={() => {
+                if (tempSelectedService && shippingRates) {
+                  // Find the service in any category to get its price
+                  let selectedServiceObj = null;
+                  ['recommended', 'economy', 'standard'].forEach(cat => {
+                    if (shippingRates[cat]) {
+                      const found = shippingRates[cat].find(s => s.id === tempSelectedService);
+                      if (found) selectedServiceObj = found;
+                    }
+                  });
+                  
+                  const newShipping = { ...(formData.platformSettings.ebay.shipping || {}), shippingService: tempSelectedService };
+                  if (selectedServiceObj) {
+                     newShipping.shippingCost = selectedServiceObj.maxPrice.toFixed(2);
+                  }
+                  handlePlatformChange('ebay', 'shipping', newShipping);
+                }
+                setIsShippingModalOpen(false);
+              }}
+            >
+              Apply Selection
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -13,33 +13,53 @@ const upload = multer({
 
 const { GetObjectCommand } = require('@aws-sdk/client-s3');
 
+const axios = require('axios');
+
 router.get('/proxy', async (req, res) => {
   try {
     const { url } = req.query;
     if (!url) return res.status(400).send('URL is required');
     
-    let key = url;
-    if (url.includes('.com/')) {
-      key = url.split('.com/')[1];
-    }
-    
-    if (key.includes('?')) {
-      key = key.split('?')[0];
-    }
-    
-    const command = new GetObjectCommand({
-      Bucket: process.env.DO_SPACES_BUCKET || 'udstg',
-      Key: key
-    });
+    // If it's a digitaloceanspaces URL, fetch via S3 client to handle permissions
+    if (url.includes('digitaloceanspaces.com')) {
+      let key = url;
+      if (url.includes('.com/')) {
+        key = url.split('.com/')[1];
+      }
+      if (key.includes('?')) {
+        key = key.split('?')[0];
+      }
+      
+      const command = new GetObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET || 'udstg',
+        Key: key
+      });
 
-    const { s3Client } = require('../utils/storage');
-    const s3Response = await s3Client.send(command);
+      const { s3Client } = require('../utils/storage');
+      const s3Response = await s3Client.send(command);
 
-    res.set('Content-Type', s3Response.ContentType || 'image/jpeg');
-    res.set('Access-Control-Allow-Origin', '*');
-    s3Response.Body.pipe(res);
+      res.set('Content-Type', s3Response.ContentType || 'image/jpeg');
+      res.set('Access-Control-Allow-Origin', '*');
+      s3Response.Body.pipe(res);
+    } else {
+      // It's an external URL (like wonatrading.com)
+      const response = await axios({
+        method: 'GET',
+        url: url,
+        responseType: 'stream',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/*'
+        },
+        timeout: 10000
+      });
+      
+      res.set('Content-Type', response.headers['content-type'] || 'image/jpeg');
+      res.set('Access-Control-Allow-Origin', '*');
+      response.data.pipe(res);
+    }
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('Proxy error:', error.message);
     res.status(500).send('Proxy error');
   }
 });
