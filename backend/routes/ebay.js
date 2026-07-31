@@ -6,6 +6,7 @@ const Integration = require('../models/Integration');
 const Sale = require('../models/Sale');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
+const EbayProfile = require('../models/EbayProfile');
 const { protect } = require('../middleware/auth');
 // Scope for eBay APIs (Inventory and Fulfillment are key for this platform)
 const EBAY_SCOPES = [
@@ -183,6 +184,73 @@ async function getEbayToken() {
   }
   return integration.credentials.accessToken;
 }
+
+// @route   GET /api/ebay/policies
+// @desc    Get eBay Business Policies for the connected account
+router.get('/policies', protect, async (req, res) => {
+  try {
+    const accessToken = await getEbayToken();
+    const isSandbox = process.env.EBAY_ENV !== 'production';
+    const baseUrl = isSandbox ? 'https://api.sandbox.ebay.com/sell/account/v1' : 'https://api.ebay.com/sell/account/v1';
+
+    const headers = {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    };
+
+    // Catch individual errors so one missing policy type doesn't break the whole request
+    const [returnRes, fulfillmentRes, paymentRes] = await Promise.all([
+      axios.get(`${baseUrl}/return_policy?marketplace_id=EBAY_US`, { headers }).catch(e => { console.error("eBay Return Policy Error:", e.response?.data || e.message); return { data: { returnPolicies: [] } }; }),
+      axios.get(`${baseUrl}/fulfillment_policy?marketplace_id=EBAY_US`, { headers }).catch(e => { console.error("eBay Fulfillment Policy Error:", e.response?.data || e.message); return { data: { fulfillmentPolicies: [] } }; }),
+      axios.get(`${baseUrl}/payment_policy?marketplace_id=EBAY_US`, { headers }).catch(e => { console.error("eBay Payment Policy Error:", e.response?.data || e.message); return { data: { paymentPolicies: [] } }; })
+    ]);
+
+    res.json({
+      success: true,
+      returnPolicies: returnRes.data.returnPolicies || [],
+      fulfillmentPolicies: fulfillmentRes.data.fulfillmentPolicies || [],
+      paymentPolicies: paymentRes.data.paymentPolicies || []
+    });
+  } catch (error) {
+    console.error('Error fetching eBay policies:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch eBay business policies' });
+  }
+});
+
+// @route   GET /api/ebay/native-profiles
+// @desc    Get custom profiles saved in our database
+router.get('/native-profiles', protect, async (req, res) => {
+  try {
+    const profiles = await EbayProfile.find().sort({ createdAt: -1 });
+    res.json({ success: true, profiles });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to fetch native profiles' });
+  }
+});
+
+// @route   POST /api/ebay/native-profiles
+// @desc    Create a new manual template for fulfillment settings
+router.post('/native-profiles', protect, async (req, res) => {
+  try {
+    const { name, type, description, configuration, saveAsDefault } = req.body;
+    
+    // In the new UX, we just save this as a local TEMPLATE.
+    // We will generate the actual eBay Business Policies at PUBLISH time.
+    const profile = new EbayProfile({ name, type: 'TEMPLATE', description, configuration });
+    await profile.save();
+    
+    if (saveAsDefault) {
+       const User = require('../models/User');
+       await User.findByIdAndUpdate(req.user, { defaultEbayProfileId: profile._id });
+    }
+    
+    res.json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error creating profile' });
+  }
+});
 
 // @route   GET /api/ebay/sync-orders
 // @desc    Pull active orders from eBay Fulfillment API
@@ -1035,6 +1103,133 @@ router.post('/import-listings', async (req, res) => {
   } catch (err) {
     console.error('eBay import error:', err);
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
+// @route   GET /api/ebay/catalog/search
+// @desc    Search eBay Catalog for item specifics
+router.get('/catalog/search', protect, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({ success: false, message: 'Query string is required' });
+    }
+
+    const accessToken = await getEbayToken();
+    const apiUrl = process.env.EBAY_ENV !== 'production' 
+      ? `https://api.sandbox.ebay.com/commerce/catalog/v1_beta/product_summary/search?q=${encodeURIComponent(q)}` 
+      : `https://api.ebay.com/commerce/catalog/v1_beta/product_summary/search?q=${encodeURIComponent(q)}`;
+
+    const response = await axios.get(apiUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US'
+      }
+    });
+
+    const products = response.data.productSummaries || [];
+    if (products.length === 0) {
+      return res.json({ success: true, itemSpecifics: null, message: 'No exact matches found' });
+    }
+
+    // Take the best match (first product)
+    const product = products[0];
+    
+    // We want to map standard product attributes to eBay Item Specifics names
+    const itemSpecifics = {};
+    if (product.brand) itemSpecifics['Brand'] = product.brand;
+    if (product.title) itemSpecifics['Model'] = product.title;
+    if (product.mpn) itemSpecifics['MPN'] = product.mpn;
+    if (product.gtin) itemSpecifics['UPC'] = product.gtin;
+
+    // Sometimes they pass deeper specs in additionalAttributes or something similar, but the catalog API might just return the basic fields in summary.
+    // Full product details are in /product/{epid} but the summary often has enough.
+    // If not, we still return the basics.
+    if (product.epid) itemSpecifics['ePID'] = product.epid;
+
+    res.json({ success: true, itemSpecifics, rawProduct: product });
+  } catch (error) {
+    console.error('eBay Catalog API Error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: 'Failed to search eBay Catalog' });
+  }
+});
+
+
+// @route   POST /api/ebay/shipping-rates
+// @desc    Get estimated shipping rates based on dimensions and weight (Mock for listing UI)
+router.post('/shipping-rates', protect, async (req, res) => {
+  try {
+    const { weightMajor, weightMinor, length, width, depth } = req.body;
+    
+    // Parse weight and dims
+    const lbs = parseInt(weightMajor) || 0;
+    const oz = parseInt(weightMinor) || 0;
+    const totalOz = (lbs * 16) + oz;
+    
+    // Static estimation logic for eBay rates
+    const rates = {
+      recommended: [
+        {
+          id: 'USPSGroundAdvantage',
+          name: 'USPS Ground Advantage',
+          carrier: 'USPS',
+          logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/USPS_logo_with_wordmark.svg/320px-USPS_logo_with_wordmark.svg.png',
+          transit: '2 - 5 business days',
+          insurance: '$100.00',
+          tracking: true,
+          maxWeight: '70 lb',
+          minPrice: totalOz <= 15.9 ? 4.15 : 6.57 + (lbs * 0.50),
+          maxPrice: totalOz <= 15.9 ? 5.80 : 11.84 + (lbs * 1.50)
+        }
+      ],
+      economy: [
+        {
+          id: 'UPSGroundSaver',
+          name: 'UPS Ground Saver',
+          carrier: 'UPS',
+          logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/UPS_Logo_Shield_2017.svg/320px-UPS_Logo_Shield_2017.svg.png',
+          transit: '1 - 6 business days',
+          insurance: '$20.00',
+          tracking: true,
+          maxWeight: '70 lb',
+          minPrice: 6.40 + (lbs * 0.40),
+          maxPrice: 13.99 + (lbs * 1.60)
+        },
+        {
+          id: 'FedExGroundEconomy',
+          name: 'FedEx Ground Economy',
+          carrier: 'FedEx',
+          logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/FedEx_Express.svg/320px-FedEx_Express.svg.png',
+          transit: '2 - 8 business days',
+          insurance: '$100.00',
+          tracking: true,
+          maxWeight: '70 lb',
+          minPrice: 7.20 + (lbs * 0.45),
+          maxPrice: 14.50 + (lbs * 1.70)
+        }
+      ],
+      standard: [
+        {
+          id: 'USPSPriority',
+          name: 'USPS Priority Mail',
+          carrier: 'USPS',
+          logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/USPS_logo_with_wordmark.svg/320px-USPS_logo_with_wordmark.svg.png',
+          transit: '1 - 3 business days',
+          insurance: '$100.00',
+          tracking: true,
+          maxWeight: '70 lb',
+          minPrice: 8.50 + (lbs * 0.80),
+          maxPrice: 19.99 + (lbs * 2.50)
+        }
+      ]
+    };
+
+    res.json({ success: true, rates });
+  } catch (err) {
+    console.error("Shipping rates error:", err);
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 });
 

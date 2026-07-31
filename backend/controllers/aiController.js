@@ -338,3 +338,61 @@ exports.processNanoBanan = async (req, res) => {
     res.status(500).json({ success: false, message: error.response?.data?.error?.message || error.message });
   }
 };
+
+exports.extractItemSpecifics = async (req, res) => {
+  try {
+    const { title } = req.body;
+    if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
+    if (!GEMINI_API_KEY) return res.status(500).json({ success: false, message: 'Gemini API Key missing' });
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    // Use gemini-2.5-flash for fast text tasks with Google Search Grounding
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      tools: [{
+        googleSearch: {}
+      }]
+    });
+
+    const prompt = `
+You are an expert mobile phone and electronics cataloger.
+Extract standard specifications from the following product title: "${title}"
+Infer missing details if the exact model is well-known (e.g. knowing a Google Pixel 9 Pro XL runs Android, or has a specific screen size if standard). 
+Only return the JSON object, NO markdown formatting, NO backticks.
+
+Strictly adhere to this JSON format and use these exact keys if you can find or infer the data. Omit the key entirely if you cannot reasonably infer it.
+{
+  "Brand": "string",
+  "Model": "string",
+  "Storage Capacity": "string",
+  "Color": "string",
+  "UPC": "string",
+  "Network": "string",
+  "Screen Size": "string",
+  "RAM": "string",
+  "Processor": "string",
+  "Operating System": "string"
+}`;
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    });
+
+    let responseText = result.response.text();
+    let specs = {};
+    try {
+       // Clean up markdown if the model wrapped it
+       if (responseText.startsWith('```')) {
+         responseText = responseText.replace(/^```json\n?/, '').replace(/^```\n?/, '').replace(/\n?```$/, '');
+       }
+       specs = JSON.parse(responseText);
+    } catch(e) {
+       console.error("Gemini JSON parse error:", e);
+    }
+
+    res.json({ success: true, itemSpecifics: specs });
+  } catch (error) {
+    console.error('Gemini Spec Extraction Error:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to extract specs via AI' });
+  }
+};

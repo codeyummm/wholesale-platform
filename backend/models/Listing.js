@@ -50,10 +50,56 @@ const listingSchema = new mongoose.Schema({
   platformSettings: {
     ebay: {
       categoryId: String,
+      storeCategoryId: String,
       conditionId: String,
+      conditionDescription: String,
+      format: { type: String, enum: ['FixedPrice', 'Auction'], default: 'FixedPrice' },
+      duration: { type: String, default: 'GTC' },
+      buyItNowPrice: Number,
+      reservePrice: Number,
+      requireImmediatePayment: { type: Boolean, default: false },
+      cost: Number,
+      bestOfferEnabled: { type: Boolean, default: false },
+      bestOfferAutoAccept: Number,
+      bestOfferAutoDecline: Number,
+      itemSpecifics: { type: Map, of: String },
+      handlingTime: { type: Number, default: 1 },
+      
+      // New Nested Shipping UI structure
+      shipping: {
+        packageWeightMajor: Number,
+        packageWeightMinor: Number,
+        packageLength: Number,
+        packageWidth: Number,
+        packageDepth: Number,
+        packageType: String,
+        shippingType: String,
+        shippingService: String,
+        shippingCost: Number,
+        freeShipping: Boolean
+      },
+
+      returnsAccepted: { type: Boolean, default: true },
+      returnPeriod: { type: Number, default: 30 },
+      paymentMethod: { type: String, default: 'PAYPAL' },
+      
+      // Legacy UI Profile IDs
       returnProfileId: String,
       shippingProfileId: String,
-      paymentProfileId: String
+      paymentProfileId: String,
+
+      zipCode: String,
+      scheduleListing: { type: Boolean, default: false },
+      scheduleDate: String,
+      scheduleTime: String,
+      shippingOptions: {
+        autofill: { type: Boolean, default: true },
+        irregularPackage: { type: Boolean, default: false },
+        internationalShipping: { type: Boolean, default: false },
+        otherShippingServices: { type: Boolean, default: false },
+        localPickup: { type: Boolean, default: false },
+        excludedLocations: { type: Boolean, default: false }
+      }
     },
     etsy: {
       taxonomyId: String,

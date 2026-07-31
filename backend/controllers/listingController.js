@@ -304,23 +304,39 @@ const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const sharp = require('sharp');
 const { uploadBuffer } = require('../utils/storage');
+const { fetchWithBrightData } = require('../services/scraperService');
 
 exports.fetchUrlData = async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ success: false, message: 'URL is required' });
 
-    // Fetch the HTML
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5'
-      },
-      timeout: 10000
-    });
+    let html;
     
-    const html = response.data;
+    // Check if the URL is a highly protected site (eBay, Amazon, etc.)
+    const isProtectedSite = url.includes('ebay.com') || url.includes('amazon.com') || url.includes('walmart.com') || url.includes('etsy.com') || url.includes('poshmark.com') || url.includes('target.com');
+    
+    if (isProtectedSite) {
+      console.log(`[Scraper] Using Bright Data Web Unlocker for protected site: ${url}`);
+      html = await fetchWithBrightData(url);
+    } else {
+      // Standard fetch for normal wholesale websites
+      console.log(`[Scraper] Using Axios for standard site: ${url}`);
+      try {
+        const response = await axios.get(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5'
+          },
+          timeout: 10000
+        });
+        html = response.data;
+      } catch (axiosError) {
+        console.log(`[Scraper] Axios failed (${axiosError.message}). Falling back to Bright Data Web Unlocker...`);
+        html = await fetchWithBrightData(url);
+      }
+    }
     const $ = cheerio.load(html);
     
     const pageTitle = $('title').text() || $('meta[property="og:title"]').attr('content') || '';

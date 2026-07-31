@@ -34,7 +34,8 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     content: { type: String, required: true }
   }],
-  defaultSignatureId: { type: mongoose.Schema.Types.ObjectId }
+  defaultSignatureId: { type: mongoose.Schema.Types.ObjectId },
+  defaultEbayProfileId: { type: mongoose.Schema.Types.ObjectId, ref: 'EbayProfile' }
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

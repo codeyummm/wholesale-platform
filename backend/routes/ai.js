@@ -10,4 +10,7 @@ router.post('/generate-listing-seo', protect, generateListingSEO);
 router.post('/generate-platform-seo', protect, generatePlatformSEO);
 router.post('/nanobanan', protect, require('../controllers/aiController').processNanoBanan);
 
+
+router.post('/extract-specs', protect, require('../controllers/aiController').extractItemSpecifics);
+
 module.exports = router;

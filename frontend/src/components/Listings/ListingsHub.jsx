@@ -150,32 +150,41 @@ export default function ListingsHub() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const itemsPerPage = 50;
+  const [stats, setStats] = useState({ totalListings: 0, totalActive: 0, totalDraft: 0, totalSynced: 0 });
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  const filteredListings = listings.filter(listing => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!listing.title?.toLowerCase().includes(q) && !listing.sku?.toLowerCase().includes(q)) return false;
-    }
-    if (filterStatus !== 'all' && listing.status !== filterStatus) return false;
-    if (filterChannel !== 'all' && (!listing.channels || !listing.channels.includes(filterChannel))) return false;
-    return true;
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, filterStatus, filterChannel]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, filterStatus, filterChannel]);
 
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentListings = filteredListings.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
-
-  useEffect(() => { fetchListings(); }, []);
+  useEffect(() => {
+    fetchListings();
+  }, [currentPage, debouncedSearchQuery, filterStatus, filterChannel]);
 
   const fetchListings = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/listings');
-      if (res.data.success) setListings(res.data.listings);
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 50,
+        search: debouncedSearchQuery,
+        status: filterStatus,
+        channel: filterChannel
+      });
+      const res = await api.get(`/listings?${params.toString()}`);
+      if (res.data.success) {
+        setListings(res.data.listings);
+        setTotalPages(res.data.pagination?.totalPages || 1);
+        setTotalItems(res.data.pagination?.totalItems || 0);
+        if (res.data.stats) setStats(res.data.stats);
+      }
     } catch (err) {
       console.error('Failed to fetch listings', err);
     } finally {
@@ -197,17 +206,12 @@ export default function ListingsHub() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === currentListings.length) {
+    if (selectedIds.size === listings.length && listings.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(currentListings.map(l => l._id)));
+      setSelectedIds(new Set(listings.map(l => l._id)));
     }
   };
-
-  // Stats
-  const totalActive = listings.filter(l => l.status === 'active').length;
-  const totalDraft = listings.filter(l => l.status === 'draft').length;
-  const totalSynced = listings.filter(l => l.channels && l.channels.length > 0).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -229,8 +233,13 @@ export default function ListingsHub() {
                 onClick={() => setShowImportModal(true)}
                 variant="outline"
               >
-                <Download size={16} className="mr-2" /> Import Listings
+                <Download size={16} className="mr-2" /> Sync Platforms
               </Button>
+              <Link to="/sales-channels/listings/bulk-import">
+                <Button variant="outline" className="text-slate-700 bg-white shadow-sm border-slate-200">
+                  <Download size={16} className="mr-2" /> Bulk Import URLs
+                </Button>
+              </Link>
               <Link to="/sales-channels/listings/new">
                 <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
                   <Plus size={16} className="mr-2" /> Create Listing
@@ -242,10 +251,10 @@ export default function ListingsHub() {
           {/* Stats Row */}
           <div className="grid grid-cols-4 gap-4 mt-6">
             {[
-              { label: 'Total Listings', value: listings.length, icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-              { label: 'Active', value: totalActive, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-              { label: 'Drafts', value: totalDraft, icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-              { label: 'Synced to Channels', value: totalSynced, icon: Globe, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Total Listings', value: stats.totalListings, icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { label: 'Active', value: stats.totalActive, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+              { label: 'Drafts', value: stats.totalDraft, icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+              { label: 'Synced to Channels', value: stats.totalSynced, icon: Globe, color: 'text-blue-600', bg: 'bg-blue-50' },
             ].map(stat => (
               <Card key={stat.label} className="shadow-sm border border-gray-200">
                 <CardContent className="p-4 flex flex-col justify-center">
@@ -293,7 +302,7 @@ export default function ListingsHub() {
               {selectedIds.size > 0 && (
                 <span className="text-indigo-600 font-medium">{selectedIds.size} selected</span>
               )}
-              <span>{filteredListings.length} listings</span>
+              <span>{totalItems} listings</span>
               <Button onClick={fetchListings} variant="ghost" size="icon" title="Refresh">
                 <RefreshCw size={15} className={loading ? 'animate-spin text-indigo-500' : 'text-gray-400'} />
               </Button>
@@ -332,7 +341,7 @@ export default function ListingsHub() {
             <TableHeader className="bg-gray-50">
               <TableRow>
                 <TableHead className="w-10">
-                  <input type="checkbox" onChange={toggleSelectAll} checked={selectedIds.size === currentListings.length && currentListings.length > 0} className="rounded text-indigo-600" />
+                  <input type="checkbox" onChange={toggleSelectAll} checked={selectedIds.size === listings.length && listings.length > 0} className="rounded text-indigo-600" />
                 </TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>SKU</TableHead>
@@ -351,7 +360,7 @@ export default function ListingsHub() {
                       <p className="text-gray-400 text-sm">Loading listings...</p>
                   </TableCell>
                 </TableRow>
-              ) : currentListings.length === 0 ? (
+              ) : listings.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-64 text-center">
                     <Package className="w-12 h-12 text-gray-200 mx-auto mb-3" />
@@ -370,7 +379,7 @@ export default function ListingsHub() {
                   </TableCell>
                 </TableRow>
               ) : (
-                currentListings.map(listing => (
+                listings.map(listing => (
                   <TableRow key={listing._id} className={selectedIds.has(listing._id) ? 'bg-indigo-50/50' : ''}>
                     <TableCell>
                       <input type="checkbox" checked={selectedIds.has(listing._id)} onChange={() => toggleSelect(listing._id)} className="rounded text-indigo-600" />
@@ -442,7 +451,7 @@ export default function ListingsHub() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 px-4 py-3">
               <p className="text-sm text-gray-600">
-                Showing <span className="font-medium">{filteredListings.length === 0 ? 0 : indexOfFirst + 1}</span>–<span className="font-medium">{Math.min(indexOfLast, filteredListings.length)}</span> of <span className="font-medium">{filteredListings.length}</span>
+                Showing <span className="font-medium">{totalItems === 0 ? 0 : ((currentPage - 1) * 50) + 1}</span>–<span className="font-medium">{Math.min(currentPage * 50, totalItems)}</span> of <span className="font-medium">{totalItems}</span>
               </p>
               <div className="flex gap-2">
                 <Button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} variant="outline" size="sm">Prev</Button>

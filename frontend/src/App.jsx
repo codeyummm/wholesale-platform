@@ -19,6 +19,7 @@ import IMEILabDashboard from './components/IMEILab/IMEILabDashboard';
 import SalesChannels from './components/SalesChannels/SalesChannels';
 import ListingsHub from './components/Listings/ListingsHub';
 import ListingEditor from './components/Listings/ListingEditor';
+import BulkImport from './components/Listings/BulkImport';
 import ShippingDashboard from './components/Shipping/ShippingDashboard';
 import ReportsPage from './components/Reports/ReportsPage';
 import Messages from './components/Messages/Messages';
@@ -92,6 +93,7 @@ function App() {
           <Route path="/sales-channels" element={<PrivateRoute><SalesChannels /></PrivateRoute>} />
           <Route path="/sales-channels/listings" element={<PrivateRoute><ListingsHub /></PrivateRoute>} />
           <Route path="/sales-channels/listings/new" element={<PrivateRoute><ListingEditor /></PrivateRoute>} />
+          <Route path="/sales-channels/listings/bulk-import" element={<PrivateRoute><BulkImport /></PrivateRoute>} />
           <Route path="/sales-channels/listings/:id" element={<PrivateRoute><ListingEditor /></PrivateRoute>} />
           <Route path="/shipping" element={<PrivateRoute><ShippingDashboard /></PrivateRoute>} />
           <Route path="/messages" element={<PrivateRoute><Messages /></PrivateRoute>} />
