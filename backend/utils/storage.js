@@ -51,6 +51,8 @@ const uploadLocalFile = async (localFilePath, destinationKey, isPublic = false) 
   
   const fileStream = fs.createReadStream(localFilePath);
   
+  if (!DO_SPACES_BUCKET) throw new Error('DO_SPACES_BUCKET is not defined in environment variables');
+  
   const params = {
     Bucket: DO_SPACES_BUCKET,
     Key: destinationKey,
@@ -68,6 +70,8 @@ const uploadLocalFile = async (localFilePath, destinationKey, isPublic = false) 
  * Upload Buffer Data (like PDFs) to DO Spaces
  */
 const uploadBuffer = async (buffer, destinationKey, contentType, isPublic = true) => {
+  if (!DO_SPACES_BUCKET) throw new Error('DO_SPACES_BUCKET is not defined in environment variables');
+
   const params = {
     Bucket: DO_SPACES_BUCKET,
     Key: destinationKey,
