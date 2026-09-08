@@ -252,9 +252,9 @@ router.post('/native-profiles', protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/ebay/sync-orders
+// @route   POST /api/ebay/sync-orders
 // @desc    Pull active orders from eBay Fulfillment API
-router.get('/sync-orders', protect, async (req, res) => {
+router.post('/sync-orders', protect, async (req, res) => {
   try {
     const accessToken = await getEbayToken();
     // Removed the filter so it pulls ALL recent orders (including shipped/completed)

@@ -132,6 +132,7 @@ export default function SalesList() {
   };
 
   const [ebayStatus, setEbayStatus] = useState(null);
+  const [syncingEbay, setSyncingEbay] = useState(false);
 
   // Auto-open create modal when customerId param exists and check eBay connection status
   useEffect(() => {
@@ -574,6 +575,25 @@ export default function SalesList() {
     }
   };
 
+  const handleSyncEbayOrders = async () => {
+    try {
+      setSyncingEbay(true);
+      const res = await api.post('/ebay/sync-orders');
+      if (res.data.success) {
+        showToast(`Successfully synced ${res.data.count} orders from eBay!`);
+        fetchSales();
+        fetchStats();
+      } else {
+        showToast('Failed to sync eBay orders', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error syncing eBay orders. Make sure it is connected.', 'error');
+    } finally {
+      setSyncingEbay(false);
+    }
+  };
+
   const handleEditSale = async (id) => {
     try {
       const res = await api.get(`/sales/${id}`);
@@ -674,6 +694,11 @@ export default function SalesList() {
           <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Create sales and track revenue</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleSyncEbayOrders}
+            disabled={syncingEbay}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fef3c7', color: '#b45309', padding: '10px 20px', borderRadius: '8px', border: '1px solid #fde68a', cursor: 'pointer', fontWeight: '500', fontSize: '14px', opacity: syncingEbay ? 0.7 : 1 }}>
+            <ShoppingCart size={18} /> Sync eBay Orders
+          </button>
           <button onClick={handleSyncShopifyOrders}
             disabled={loading}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#eef2ff', color: '#4f46e5', padding: '10px 20px', borderRadius: '8px', border: '1px solid #c7d2fe', cursor: 'pointer', fontWeight: '500', fontSize: '14px', opacity: loading ? 0.7 : 1 }}>

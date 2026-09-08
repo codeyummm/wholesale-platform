@@ -46,7 +46,7 @@ const getRates = async (req, res) => {
       },
       confirmation: confirmation || "none",
       insuranceOptions: insuranceOptions || null,
-      residential: true
+      residential: req.body.residential || false
     };
 
     const response = await axios.post(`${SHIPSTATION_API_URL}/shipments/getrates`, payload, {
@@ -151,7 +151,7 @@ const createLabel = async (req, res) => {
               dimensions: payload.dimensions,
               confirmation: payload.confirmation,
               insuranceOptions: payload.insuranceOptions,
-              residential: true
+              residential: req.body.shipTo?.residential || false
             };
             const rRes = await axios.post(`${SHIPSTATION_API_URL}/shipments/getrates`, ratePayload, { headers: { 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' } });
             const rateResponse = rRes.data;
